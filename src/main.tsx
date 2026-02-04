@@ -6,6 +6,7 @@ import { CssBaseline } from "@mui/material";
 
 import { AuthProvider } from "./auth/AuthContext";
 import { RequireAuth } from "./auth/RequireAuth";
+import { RequireRole } from "./auth/RequireRole";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -24,6 +25,7 @@ import AdminLayout from "./components/AdminLayout";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import AdminUserDetailsPage from "./pages/admin/AdminUserDetailsPage";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
+import AdminOrderDetailsPage from "./pages/admin/AdminOrderDetailsPage";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -51,17 +53,22 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/payments/orders/:orderId" element={<PaymentDetailsPage />} />
 
-              {/* ✅ ADMIN (no roles for now) */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<Navigate to="/admin/users" replace />} />
+              {/* ✅ ADMIN (ADMIN + MANAGER only) */}
+              <Route element={<RequireRole anyOf={["ADMIN", "MANAGER"]} redirectTo="/home" />}>
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<Navigate to="/admin/users" replace />} />
 
-                {/* users */}
-                <Route path="users" element={<AdminUsersPage />} />
-                <Route path="users/:userId" element={<AdminUserDetailsPage />} />
+                  {/* users */}
+                  <Route path="users" element={<AdminUsersPage />} />
+                  <Route path="users/:userId" element={<AdminUserDetailsPage />} />
 
-                {/* other sections */}
-                <Route path="orders" element={<AdminOrdersPage />} />
-                <Route path="payments" element={<AdminPaymentsPage />} />
+                  {/* orders */}
+                  <Route path="orders" element={<AdminOrdersPage />} />
+                  <Route path="orders/:orderId" element={<AdminOrderDetailsPage />} />
+
+                  {/* payments */}
+                  <Route path="payments" element={<AdminPaymentsPage />} />
+                </Route>
               </Route>
 
               {/* default */}

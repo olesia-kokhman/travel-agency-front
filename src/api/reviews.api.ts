@@ -37,8 +37,19 @@ export async function updateReview(reviewId: string, dto: ReviewUpdateDto): Prom
 }
 
 export async function getReviewsByTour(tourId: string) {
-    const res = await http.get<ApiSuccessResponse<ReviewResponseDto[]>>(
-        `/api/tours/${tourId}/reviews`
-    );
-    return res.data.results;
+  const res = await http.get<ApiSuccessResponse<ReviewResponseDto[]>>(
+    `/api/tours/${tourId}/reviews`
+  );
+  return res.data.results;
+}
+
+/**
+ * NEW: get all reviews by userId
+ * Controller: GET /api/reviews/users/{userId}/reviews
+ */
+export async function getReviewsByUser(userId: string): Promise<ReviewResponseDto[]> {
+  const res = await http.get<ApiSuccessResponse<ReviewResponseDto[]>>(
+    `/api/users/${userId}/reviews`
+  );
+  return res.data.results;
 }

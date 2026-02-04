@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AppBar,
   Box,
@@ -15,12 +15,35 @@ import { useAuth } from "../auth/AuthContext";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 
+function normalizeRole(r: string) {
+  return (r ?? "").trim().toUpperCase();
+}
+
+function hasAnyRole(userRoles: string[], allowed: string[]) {
+  const allowedSet = new Set(allowed.map(normalizeRole));
+
+  return (userRoles ?? []).some((r) => {
+    const rr = normalizeRole(r);
+    // support both ADMIN and ROLE_ADMIN styles
+    return (
+      allowedSet.has(rr) ||
+      allowedSet.has(rr.replace(/^ROLE_/, "")) ||
+      allowedSet.has(`ROLE_${rr}`)
+    );
+  });
+}
+
 export default function AppLayout() {
   const auth = useAuth();
   const navigate = useNavigate();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
+
+  const canSeeAdmin = useMemo(
+    () => hasAnyRole(auth.roles ?? [], ["ADMIN", "MANAGER"]),
+    [auth.roles]
+  );
 
   const handleOpenMenu = (e: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(e.currentTarget);
@@ -43,7 +66,7 @@ export default function AppLayout() {
     <Box>
       <AppBar position="static">
         <Toolbar>
-          {/* ✅ Brand instead of Home */}
+          {/* Brand */}
           <Typography
             variant="h6"
             sx={{ flexGrow: 1, cursor: "pointer" }}
@@ -60,12 +83,14 @@ export default function AppLayout() {
             Orders
           </Button>
 
-          {/* ✅ Admin page (no roles for now) */}
-          <Button color="inherit" component={RouterLink} to="/admin/users">
-            Admin
-          </Button>
+          {/* ✅ Admin visible only for ADMIN/MANAGER */}
+          {canSeeAdmin && (
+            <Button color="inherit" component={RouterLink} to="/admin/users">
+              Admin
+            </Button>
+          )}
 
-          {/* ✅ Email dropdown */}
+          {/* Email dropdown */}
           <Button
             color="inherit"
             onClick={handleOpenMenu}

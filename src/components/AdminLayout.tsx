@@ -1,12 +1,45 @@
-import { Box, Button, Card, CardContent, Stack, Typography } from "@mui/material";
-import { Link as RouterLink, Outlet, useLocation } from "react-router-dom";
+import { Alert, Box, Button, Card, CardContent, Stack, Typography } from "@mui/material";
+import { Link as RouterLink, Outlet, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 function isActive(pathname: string, target: string) {
   return pathname === target || pathname.startsWith(target + "/");
 }
 
+function normalizeRole(r: string) {
+  return (r ?? "").trim().toUpperCase();
+}
+
+function hasAnyRole(userRoles: string[], allowed: string[]) {
+  const allowedSet = new Set(allowed.map(normalizeRole));
+
+  return (userRoles ?? []).some((r) => {
+    const rr = normalizeRole(r);
+    return (
+      allowedSet.has(rr) ||
+      allowedSet.has(rr.replace(/^ROLE_/, "")) ||
+      allowedSet.has(`ROLE_${rr}`)
+    );
+  });
+}
+
 export default function AdminLayout() {
   const { pathname } = useLocation();
+  const auth = useAuth();
+
+  const canSeeAdmin = hasAnyRole(auth.roles ?? [], ["ADMIN", "MANAGER"]);
+
+  // Extra safety: if someone reaches AdminLayout without roles, redirect.
+  if (!canSeeAdmin) {
+    return (
+      <Box sx={{ maxWidth: 900, mx: "auto", p: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          Access denied. Admin panel is available only for ADMIN/MANAGER.
+        </Alert>
+        <Navigate to="/home" replace />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
