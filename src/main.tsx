@@ -15,6 +15,9 @@ import AppLayout from "./components/AppLayout";
 import HomePage from "./pages/HomePage";
 import ToursPage from "./pages/ToursPage";
 import TourDetailsPage from "./pages/TourDetailsPage";
+import TourEditPage from "./pages/TourEditPage";
+import TourCreatePage from "./pages/TourCreatePage";
+
 import OrdersPage from "./pages/OrdersPage";
 import OrderDetailsPage from "./pages/OrderDetailsPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -44,9 +47,17 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             <Route element={<AppLayout />}>
               <Route path="/home" element={<HomePage />} />
 
+              {/* TOURS */}
               <Route path="/tours" element={<ToursPage />} />
               <Route path="/tours/:tourId" element={<TourDetailsPage />} />
 
+              {/* Admin-only create/update tour */}
+              <Route element={<RequireRole anyOf={["ADMIN"]} redirectTo="/tours" />}>
+                <Route path="/tours/new" element={<TourCreatePage />} />
+                <Route path="/tours/:tourId/edit" element={<TourEditPage />} />
+              </Route>
+
+              {/* ORDERS */}
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
 

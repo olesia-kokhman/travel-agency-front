@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/admin/AdminUsersPage.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -7,18 +8,26 @@ import {
   CardActionArea,
   CardContent,
   CircularProgress,
+  Collapse,
   Divider,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
   MenuItem,
+  Pagination,
   Select,
   Stack,
+  Switch,
   TextField,
   Typography,
   Chip,
 } from "@mui/material";
+import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
+import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import { useNavigate } from "react-router-dom";
 
 import * as usersApi from "../../api/users.api";
@@ -39,8 +48,28 @@ type UserAccessUpdateDto = {
 
 const ROLE_OPTIONS = ["USER", "MANAGER", "ADMIN"] as const;
 
-function normalize(v?: string | null) {
-  return (v ?? "").toString().trim().toLowerCase();
+// ✅ для фільтра roles
+const USER_ROLES = ["USER", "MANAGER", "ADMIN"] as const;
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(t);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+function normalizeRole(r: string) {
+  return (r ?? "").trim().toUpperCase();
+}
+
+function hasRole(userRoles: string[], role: string) {
+  const target = normalizeRole(role);
+  return (userRoles ?? []).some((x) => {
+    const rr = normalizeRole(x);
+    return rr === target || rr === `ROLE_${target}` || rr.replace(/^ROLE_/, "") === target;
+  });
 }
 
 function displayName(u: UserResponseDto) {
@@ -89,18 +118,35 @@ async function deleteUserAdmin(userId: string): Promise<void> {
   await http.delete<ApiSuccessResponse<void>>(`/api/users/${userId}`);
 }
 
-// ---- auth helpers ----
-function normalizeRole(r: string) {
-  return (r ?? "").trim().toUpperCase();
+type SortOption =
+  | "CREATED_DESC"
+  | "CREATED_ASC"
+  | "EMAIL_ASC"
+  | "EMAIL_DESC"
+  | "BALANCE_ASC"
+  | "BALANCE_DESC";
+
+function sortToPageable(sort: SortOption): { property: string; direction: "asc" | "desc" } | null {
+  switch (sort) {
+    case "CREATED_DESC":
+      return { property: "createdAt", direction: "desc" };
+    case "CREATED_ASC":
+      return { property: "createdAt", direction: "asc" };
+    case "EMAIL_ASC":
+      return { property: "email", direction: "asc" };
+    case "EMAIL_DESC":
+      return { property: "email", direction: "desc" };
+    case "BALANCE_ASC":
+      return { property: "balance", direction: "asc" };
+    case "BALANCE_DESC":
+      return { property: "balance", direction: "desc" };
+    default:
+      return null;
+  }
 }
 
-function hasRole(userRoles: string[], role: string) {
-  const target = normalizeRole(role);
-  return (userRoles ?? []).some((r) => {
-    const rr = normalizeRole(r);
-    // support ADMIN and ROLE_ADMIN formats
-    return rr === target || rr === `ROLE_${target}` || rr.replace(/^ROLE_/, "") === target;
-  });
+function isNonEmpty(v?: string | null) {
+  return !!v && v.trim().length > 0;
 }
 
 export default function AdminUsersPage() {
@@ -110,13 +156,33 @@ export default function AdminUsersPage() {
   // ✅ if current user is MANAGER -> hide dangerous actions
   const isManager = useMemo(() => hasRole(auth.roles ?? [], "MANAGER"), [auth.roles]);
 
+  // ===== server-side query state =====
+  const [q, setQ] = useState("");
+  const qDebounced = useDebouncedValue(q, 450);
+
+  const [showFilters, setShowFilters] = useState(false);
+
+  const [roles, setRoles] = useState<string[]>([]);
+  const [active, setActive] = useState<boolean | null>(null);
+
+  const [minBalance, setMinBalance] = useState("");
+  const [maxBalance, setMaxBalance] = useState("");
+
+  // LocalDateTime ISO strings expected by backend; робимо прості text inputs
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
+
+  const [sort, setSort] = useState<SortOption>("CREATED_DESC");
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+
+  // ===== data state =====
   const [users, setUsers] = useState<UserResponseDto[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [q, setQ] = useState("");
-
-  // busy по конкретному userId
   const [busyId, setBusyId] = useState<string | null>(null);
 
   // role dialog
@@ -124,55 +190,114 @@ export default function AdminUsersPage() {
   const [roleTarget, setRoleTarget] = useState<UserResponseDto | null>(null);
   const [roleValue, setRoleValue] = useState<string>("USER");
 
+  // avoid stale responses
+  const requestSeq = useRef(0);
+
+  const filter = useMemo<usersApi.UserFilter>(() => {
+    const f: usersApi.UserFilter = {};
+
+    if (isNonEmpty(qDebounced)) f.q = qDebounced.trim();
+
+    if (roles.length) f.roles = roles;
+
+    if (typeof active === "boolean") f.active = active;
+
+    if (isNonEmpty(minBalance)) f.minBalance = minBalance.trim();
+    if (isNonEmpty(maxBalance)) f.maxBalance = maxBalance.trim();
+
+    if (isNonEmpty(createdFrom)) f.createdFrom = createdFrom.trim();
+    if (isNonEmpty(createdTo)) f.createdTo = createdTo.trim();
+
+    return f;
+  }, [qDebounced, roles, active, minBalance, maxBalance, createdFrom, createdTo]);
+
   const load = async () => {
+    const seq = ++requestSeq.current;
+
     setError(null);
     setLoading(true);
     try {
-      const list = await usersApi.getAllUsers();
-      setUsers(list);
+      const res = await usersApi.getUsersPage({
+        filter,
+        page,
+        size,
+        sort: sortToPageable(sort),
+      });
+
+      if (seq !== requestSeq.current) return;
+
+      setUsers(res.results ?? []);
+      setTotalPages(Math.max(1, res.totalPages ?? 1));
+      setTotalElements(res.totalElements ?? 0);
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to load users";
+      if (seq !== requestSeq.current) return;
+
+      const msg =
+        err?.response?.data?.statusMessage ??
+        err?.response?.data?.message ??
+        "Failed to load users";
       setError(msg);
+      setUsers([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
-      setLoading(false);
+      if (seq === requestSeq.current) setLoading(false);
     }
   };
 
+  // reset page on filter/sort/size changes
+  useEffect(() => {
+    setPage(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, sort, size]);
+
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, sort, page, size]);
 
-  const filtered = useMemo(() => {
-    const s = normalize(q);
-    if (!s) return users;
+  const activeFilterChips = useMemo(() => {
+    const chips: { key: string; label: string; onDelete: () => void }[] = [];
 
-    return users.filter((u) => {
-      const roles = pickRoles(u).join(" ");
-      const hay = [
-        u.id,
-        u.email,
-        u.name ?? "",
-        u.surname ?? "",
-        u.phoneNumber ?? "",
-        roles,
-        u.balance != null ? String(u.balance) : "",
-        typeof u.active === "boolean" ? (u.active ? "active" : "inactive") : "",
-        typeof u.enabled === "boolean" ? (u.enabled ? "enabled" : "disabled") : "",
-      ]
-        .join(" ")
-        .toLowerCase();
+    if (isNonEmpty(qDebounced))
+      chips.push({ key: "q", label: `q: ${qDebounced.trim()}`, onDelete: () => setQ("") });
 
-      return hay.includes(s);
-    });
-  }, [users, q]);
+    if (roles.length)
+      chips.push({ key: "roles", label: `roles: ${roles.join(", ")}`, onDelete: () => setRoles([]) });
+
+    if (typeof active === "boolean")
+      chips.push({ key: "active", label: `active: ${active}`, onDelete: () => setActive(null) });
+
+    if (isNonEmpty(minBalance))
+      chips.push({ key: "minBalance", label: `minBalance: ${minBalance}`, onDelete: () => setMinBalance("") });
+
+    if (isNonEmpty(maxBalance))
+      chips.push({ key: "maxBalance", label: `maxBalance: ${maxBalance}`, onDelete: () => setMaxBalance("") });
+
+    if (isNonEmpty(createdFrom))
+      chips.push({ key: "createdFrom", label: `createdFrom: ${createdFrom}`, onDelete: () => setCreatedFrom("") });
+
+    if (isNonEmpty(createdTo))
+      chips.push({ key: "createdTo", label: `createdTo: ${createdTo}`, onDelete: () => setCreatedTo("") });
+
+    return chips;
+  }, [qDebounced, roles, active, minBalance, maxBalance, createdFrom, createdTo]);
+
+  const clearAllFilters = () => {
+    setQ("");
+    setRoles([]);
+    setActive(null);
+    setMinBalance("");
+    setMaxBalance("");
+    setCreatedFrom("");
+    setCreatedTo("");
+  };
 
   // ===== Actions =====
-
   const openRoleDialog = (e: React.MouseEvent, u: UserResponseDto) => {
     e.stopPropagation();
     setRoleTarget(u);
 
-    // current role: role -> first roles -> USER
     const currentRole = (u.role ?? pickRoles(u)[0] ?? "USER").toString();
     setRoleValue(currentRole);
     setRoleDialogOpen(true);
@@ -189,10 +314,8 @@ export default function AdminUsersPage() {
     setBusyId(roleTarget.id);
     setError(null);
     try {
-      const updated = await patchUserAdmin(roleTarget.id, { role: roleValue });
-
-      // оновлюємо локально
-      setUsers((prev) => prev.map((x) => (x.id === roleTarget.id ? { ...x, ...updated } : x)));
+      await patchUserAdmin(roleTarget.id, { role: roleValue });
+      await load(); // server-side list -> reload
       closeRoleDialog();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Failed to update role";
@@ -210,7 +333,7 @@ export default function AdminUsersPage() {
     setError(null);
     try {
       await deleteUserAdmin(u.id);
-      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      await load();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Failed to delete user";
       setError(msg);
@@ -222,29 +345,17 @@ export default function AdminUsersPage() {
   const handleToggleBlock = async (e: React.MouseEvent, u: UserResponseDto) => {
     e.stopPropagation();
 
-    const active = getActive(u);
-    const nextActive = active === false ? true : false;
+    const cur = getActive(u);
+    const nextActive = cur === false ? true : false;
 
-    const actionLabel = nextActive ? "Unblock" : "Block";
-    if (!confirm(`${actionLabel} user ${u.email}?`)) return;
+    const label = nextActive ? "Unblock" : "Block";
+    if (!confirm(`${label} user ${u.email}?`)) return;
 
     setBusyId(u.id);
     setError(null);
     try {
-      const updated = await patchUserAdmin(u.id, { active: nextActive });
-
-      setUsers((prev) =>
-        prev.map((x) =>
-          x.id === u.id
-            ? {
-                ...x,
-                ...updated,
-                active: typeof x.active === "boolean" ? nextActive : updated.active ?? x.active,
-                enabled: typeof x.enabled === "boolean" ? nextActive : updated.enabled ?? x.enabled,
-              }
-            : x
-        )
-      );
+      await patchUserAdmin(u.id, { active: nextActive });
+      await load();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? "Failed to update user status";
       setError(msg);
@@ -254,7 +365,6 @@ export default function AdminUsersPage() {
   };
 
   // ===== Render =====
-
   if (loading) {
     return (
       <Box sx={{ py: 6, display: "flex", justifyContent: "center" }}>
@@ -264,46 +374,187 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+    <Stack spacing={2}>
+      {error && <Alert severity="error">{error}</Alert>}
 
       {/* Header */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={{ mb: 2 }}
-        alignItems={{ xs: "stretch", sm: "center" }}
-      >
+      <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
             Users
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Total: {users.length} • Shown: {filtered.length}
+            Found: {totalElements} • Page {page + 1} / {totalPages}
           </Typography>
         </Box>
 
         <TextField
           fullWidth
           size="small"
-          label="Search (email, name, role, phone, balance...)"
+          label="Search"
+          placeholder="email / name / phone…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
       </Stack>
 
-      {filtered.length === 0 ? (
+      {/* Toolbar */}
+      <Card sx={{ borderRadius: 3, p: 2 }}>
+        <Stack spacing={1.6}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel id="sort-label">Sort</InputLabel>
+              <Select
+                labelId="sort-label"
+                label="Sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOption)}
+              >
+                <MenuItem value="CREATED_DESC">Created: newest</MenuItem>
+                <MenuItem value="CREATED_ASC">Created: oldest</MenuItem>
+                <MenuItem value="EMAIL_ASC">Email: A → Z</MenuItem>
+                <MenuItem value="EMAIL_DESC">Email: Z → A</MenuItem>
+                <MenuItem value="BALANCE_ASC">Balance: low → high</MenuItem>
+                <MenuItem value="BALANCE_DESC">Balance: high → low</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <InputLabel id="size-label">Per page</InputLabel>
+              <Select
+                labelId="size-label"
+                label="Per page"
+                value={String(size)}
+                onChange={(e) => setSize(Number(e.target.value))}
+              >
+                <MenuItem value="5">5</MenuItem>
+                <MenuItem value="10">10</MenuItem>
+                <MenuItem value="20">20</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Box sx={{ flexGrow: 1 }} />
+
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant={showFilters ? "contained" : "outlined"}
+                startIcon={<FilterAltOutlinedIcon />}
+                onClick={() => setShowFilters((v) => !v)}
+                sx={{ borderRadius: 2, textTransform: "none" }}
+              >
+                Filters
+              </Button>
+
+              <Button
+                variant="text"
+                startIcon={<ClearOutlinedIcon />}
+                onClick={clearAllFilters}
+                sx={{ borderRadius: 2, textTransform: "none" }}
+              >
+                Reset
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Collapse in={showFilters}>
+            <Divider sx={{ my: 1 }} />
+
+            <Stack spacing={1.4}>
+              <FormControl size="small" fullWidth>
+                <InputLabel id="roles-label">Roles</InputLabel>
+                <Select
+                  labelId="roles-label"
+                  label="Roles"
+                  multiple
+                  value={roles}
+                  onChange={(e) => setRoles(e.target.value as string[])}
+                >
+                  {USER_ROLES.map((r) => (
+                    <MenuItem key={r} value={r}>
+                      {r}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
+                <TextField
+                  value={minBalance}
+                  onChange={(e) => setMinBalance(e.target.value)}
+                  label="Min balance"
+                  size="small"
+                  fullWidth
+                />
+                <TextField
+                  value={maxBalance}
+                  onChange={(e) => setMaxBalance(e.target.value)}
+                  label="Max balance"
+                  size="small"
+                  fullWidth
+                />
+              </Stack>
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
+                <TextField
+                  value={createdFrom}
+                  onChange={(e) => setCreatedFrom(e.target.value)}
+                  label="Created from (ISO)"
+                  placeholder="2026-02-01T00:00:00"
+                  size="small"
+                  fullWidth
+                />
+                <TextField
+                  value={createdTo}
+                  onChange={(e) => setCreatedTo(e.target.value)}
+                  label="Created to (ISO)"
+                  placeholder="2026-02-10T23:59:59"
+                  size="small"
+                  fullWidth
+                />
+              </Stack>
+
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2} alignItems="center">
+                <FormControlLabel
+                  control={
+                    <Switch checked={active === true} onChange={(e) => setActive(e.target.checked ? true : null)} />
+                  }
+                  label="Active only"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch checked={active === false} onChange={(e) => setActive(e.target.checked ? false : null)} />
+                  }
+                  label="Inactive only"
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ ml: { sm: "auto" } }}>
+                  Tip: leave both off to not filter by active.
+                </Typography>
+              </Stack>
+            </Stack>
+          </Collapse>
+
+          {activeFilterChips.length > 0 && (
+            <>
+              <Divider sx={{ my: 1 }} />
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {activeFilterChips.map((c) => (
+                  <Chip key={c.key} label={c.label} onDelete={c.onDelete} size="small" />
+                ))}
+              </Stack>
+            </>
+          )}
+        </Stack>
+      </Card>
+
+      {/* List */}
+      {users.length === 0 ? (
         <Alert severity="info">No users found.</Alert>
       ) : (
         <Stack spacing={2}>
-          {filtered.map((u) => {
-            const roles = pickRoles(u);
+          {users.map((u) => {
+            const rs = pickRoles(u);
             const st = statusLabel(u);
-            const active = getActive(u);
+            const activeValue = getActive(u);
             const busy = busyId === u.id;
 
             return (
@@ -314,15 +565,11 @@ export default function AdminUsersPage() {
                   borderRadius: 3,
                   overflow: "hidden",
                   transition: "transform 120ms ease, box-shadow 120ms ease",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 10px 26px rgba(0,0,0,0.08)",
-                  },
+                  "&:hover": { transform: "translateY(-1px)", boxShadow: "0 10px 26px rgba(0,0,0,0.08)" },
                 }}
               >
                 <CardActionArea onClick={() => navigate(`/admin/users/${u.id}`)}>
                   <CardContent sx={{ p: 2.5 }}>
-                    {/* Top row */}
                     <Stack
                       direction={{ xs: "column", lg: "row" }}
                       spacing={2}
@@ -341,25 +588,25 @@ export default function AdminUsersPage() {
 
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" alignItems="center">
                           <Chip label={st} color={statusColor(st)} variant="outlined" size="small" />
-
                           {u.balance != null && (
                             <Chip label={`Balance: ${formatMoney(u.balance)}`} variant="outlined" size="small" />
                           )}
-
                           <Typography variant="caption" color="text.secondary">
                             ID: {u.id}
                           </Typography>
                         </Stack>
                       </Box>
 
-                      {/* ✅ Actions (ADMIN only). If MANAGER -> hide. */}
                       {!isManager && (
                         <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ flexShrink: 0 }}>
                           <Button
                             variant="outlined"
                             size="small"
                             disabled={busy}
-                            onClick={(e) => openRoleDialog(e, u)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openRoleDialog(e, u);
+                            }}
                             sx={{ borderRadius: 2 }}
                           >
                             Change role
@@ -372,7 +619,7 @@ export default function AdminUsersPage() {
                             onClick={(e) => handleToggleBlock(e, u)}
                             sx={{ borderRadius: 2 }}
                           >
-                            {active === false ? "Unblock" : "Block"}
+                            {activeValue === false ? "Unblock" : "Block"}
                           </Button>
 
                           <Button
@@ -391,7 +638,6 @@ export default function AdminUsersPage() {
 
                     <Divider sx={{ my: 2 }} />
 
-                    {/* Roles row */}
                     <Stack
                       direction={{ xs: "column", md: "row" }}
                       spacing={1.5}
@@ -399,11 +645,7 @@ export default function AdminUsersPage() {
                       justifyContent="space-between"
                     >
                       <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-                        {roles.length > 0 ? (
-                          roles.map((r) => <Chip key={r} size="small" label={r} />)
-                        ) : (
-                          <Chip size="small" label="ROLE: —" variant="outlined" />
-                        )}
+                        {rs.length > 0 ? rs.map((r) => <Chip key={r} size="small" label={r} />) : <Chip size="small" label="ROLE: —" variant="outlined" />}
                       </Stack>
 
                       <Typography variant="body2" color="text.secondary">
@@ -418,7 +660,14 @@ export default function AdminUsersPage() {
         </Stack>
       )}
 
-      {/* ✅ Role dialog: also hide if MANAGER (extra safety) */}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Stack direction="row" justifyContent="center" sx={{ py: 1 }}>
+          <Pagination count={totalPages} page={page + 1} onChange={(_, p) => setPage(p - 1)} shape="rounded" />
+        </Stack>
+      )}
+
+      {/* Role dialog */}
       {!isManager && (
         <Dialog open={roleDialogOpen} onClose={closeRoleDialog} fullWidth maxWidth="xs">
           <DialogTitle>Change role</DialogTitle>
@@ -438,16 +687,12 @@ export default function AdminUsersPage() {
 
           <DialogActions>
             <Button onClick={closeRoleDialog}>Cancel</Button>
-            <Button
-              variant="contained"
-              onClick={saveRole}
-              disabled={!roleTarget || busyId === roleTarget?.id}
-            >
+            <Button variant="contained" onClick={saveRole} disabled={!roleTarget || busyId === roleTarget?.id}>
               Save
             </Button>
           </DialogActions>
         </Dialog>
       )}
-    </Box>
+    </Stack>
   );
 }

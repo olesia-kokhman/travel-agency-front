@@ -11,7 +11,7 @@ export type TourUpdateDto = {
   longDescription?: string | null;
   shortDescription?: string | null;
 
-  price?: any; // BigDecimal -> number|string (safe)
+  price?: any;
   country?: string | null;
   city?: string | null;
 
@@ -23,8 +23,8 @@ export type TourUpdateDto = {
   transferType?: string | null;
   hotelType?: string | null;
 
-  checkIn?: string | null;  // ISO string
-  checkOut?: string | null; // ISO string
+  checkIn?: string | null;
+  checkOut?: string | null;
 };
 
 export type TourCreateDto = {
@@ -44,10 +44,118 @@ export type TourCreateDto = {
   transferType: string;
   hotelType: string;
 
-  checkIn: string;  // ISO string
-  checkOut: string; // ISO string
+  checkIn: string;
+  checkOut: string;
 };
 
+// ===== NEW: ApiPageResponse (matches backend) =====
+export type ApiPageResponse<T> = {
+  statusCode: number;
+  statusMessage: string;
+  results: T[];
+
+  page: number; // 0-based
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  numberOfElements: number;
+  first: boolean;
+  last: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
+
+  sort: { property: string; direction: string }[];
+};
+
+// ===== NEW: Filter type (matches TourFilter) =====
+export type TourFilter = {
+  q?: string;
+  types?: string[]; // TourType enum names
+  transferTypes?: string[]; // TransferType enum names
+  hotelTypes?: string[]; // HotelType enum names
+
+  minPrice?: string; // BigDecimal as string
+  maxPrice?: string;
+
+  country?: string;
+  city?: string;
+
+  hot?: boolean;
+  active?: boolean;
+
+  minCapacity?: number;
+  maxCapacity?: number;
+
+  // LocalDateTime ISO, e.g. 2026-02-05T00:00:00
+  checkInFrom?: string;
+  checkInTo?: string;
+  checkOutFrom?: string;
+  checkOutTo?: string;
+};
+
+export type ToursPageRequest = {
+  filter?: TourFilter;
+  page?: number; // 0-based
+  size?: number;
+  sort?: { property: string; direction: "asc" | "desc" } | null;
+};
+
+function appendIf(params: URLSearchParams, key: string, value: any) {
+  if (value === null || value === undefined) return;
+  if (typeof value === "string" && value.trim() === "") return;
+  params.append(key, String(value));
+}
+
+function appendList(params: URLSearchParams, key: string, values?: string[]) {
+  if (!values || values.length === 0) return;
+  values.filter(Boolean).forEach((v) => params.append(key, v));
+}
+
+// ===== NEW: server-side paging/filter/sort =====
+export async function getToursPage(req: ToursPageRequest = {}): Promise<ApiPageResponse<TourResponseDto>> {
+  const params = new URLSearchParams();
+
+  const page = req.page ?? 0;
+  const size = req.size ?? 10;
+
+  params.set("page", String(page));
+  params.set("size", String(size));
+
+  const sort = req.sort;
+  if (sort?.property) {
+    // Spring pageable expects: sort=field,asc
+    params.append("sort", `${sort.property},${sort.direction}`);
+  }
+
+  const f = req.filter ?? {};
+  appendIf(params, "q", f.q);
+
+  appendList(params, "types", f.types);
+  appendList(params, "transferTypes", f.transferTypes);
+  appendList(params, "hotelTypes", f.hotelTypes);
+
+  appendIf(params, "minPrice", f.minPrice);
+  appendIf(params, "maxPrice", f.maxPrice);
+
+  appendIf(params, "country", f.country);
+  appendIf(params, "city", f.city);
+
+  if (typeof f.hot === "boolean") appendIf(params, "hot", f.hot);
+  if (typeof f.active === "boolean") appendIf(params, "active", f.active);
+
+  appendIf(params, "minCapacity", f.minCapacity);
+  appendIf(params, "maxCapacity", f.maxCapacity);
+
+  appendIf(params, "checkInFrom", f.checkInFrom);
+  appendIf(params, "checkInTo", f.checkInTo);
+  appendIf(params, "checkOutFrom", f.checkOutFrom);
+  appendIf(params, "checkOutTo", f.checkOutTo);
+
+  const { data } = await http.get<ApiPageResponse<TourResponseDto>>(`/api/tours?${params.toString()}`);
+  return data;
+}
+
+// залишаю для сумісності, але краще вже не використовувати
 export async function getAllTours(): Promise<TourResponseDto[]> {
   const { data } = await http.get<ApiSuccessResponse<TourResponseDto[]>>("/api/tours");
   return data.results;

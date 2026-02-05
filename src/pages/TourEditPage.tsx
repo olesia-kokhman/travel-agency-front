@@ -16,8 +16,8 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import * as toursApi from "../../api/tours.api";
-import type { TourResponseDto } from "../../types/response";
+import * as toursApi from "../api/tours.api";
+import type { TourResponseDto } from "../types/response";
 
 // enums (adjust if your backend uses different names)
 const TOUR_TYPES = ["REST", "EXCURSION", "SHOPPING"] as const;
