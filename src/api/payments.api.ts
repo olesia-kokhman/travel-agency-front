@@ -1,12 +1,11 @@
-// src/api/payments.api.ts
 import { http } from "./http";
 import type { ApiSuccessResponse } from "../types/response";
 
 export type PaymentResponseDto = {
   id: string;
 
-  paymentMethod: string; // enum as string
-  status: string; // enum as string
+  paymentMethod: string; 
+  status: string; 
 
   paidAt: string | null;
   amount: string | number;
@@ -19,11 +18,10 @@ export type PaymentResponseDto = {
 };
 
 export type PaymentRequestDto = {
-  paymentMethod: string; // e.g. "CARD"
-  amount: string; // BigDecimal -> send string
+  paymentMethod: string; 
+  amount: string; 
 };
 
-// ===== page response (matches backend ApiPageResponse) =====
 export type ApiPageResponse<T> = {
   statusCode: number;
   statusMessage: string;
@@ -42,15 +40,14 @@ export type ApiPageResponse<T> = {
   sort: { property: string; direction: string }[];
 };
 
-// ===== matches PaymentFilter =====
 export type PaymentFilter = {
   statuses?: string[];
   methods?: string[];
 
-  minAmount?: string; // BigDecimal
+  minAmount?: string;
   maxAmount?: string;
 
-  paidFrom?: string; // ISO local datetime
+  paidFrom?: string; 
   paidTo?: string;
 
   hasFailureReason?: boolean;
@@ -74,7 +71,6 @@ function appendList(params: URLSearchParams, key: string, values?: string[]) {
   values.filter(Boolean).forEach((v) => params.append(key, v));
 }
 
-// ===== USER ("me") =====
 export async function getPaymentByOrderId(orderId: string): Promise<PaymentResponseDto> {
   const { data } = await http.get<ApiSuccessResponse<PaymentResponseDto>>(`/api/payments/me/orders/${orderId}`);
   return data.results;
@@ -85,13 +81,11 @@ export async function createPayment(orderId: string, dto: PaymentRequestDto): Pr
   return data.results;
 }
 
-// ===== ADMIN single =====
 export async function getPaymentByOrderIdAdmin(orderId: string): Promise<PaymentResponseDto> {
   const { data } = await http.get<ApiSuccessResponse<PaymentResponseDto>>(`/api/payments/orders/${orderId}`);
   return data.results;
 }
 
-// ✅ NEW: ADMIN page list (GET /api/payments)
 export async function getPaymentsPageAdmin(
   req: PaymentsPageAdminRequest = {}
 ): Promise<ApiPageResponse<PaymentResponseDto>> {
@@ -117,4 +111,11 @@ export async function getPaymentsPageAdmin(
 
   const { data } = await http.get<ApiPageResponse<PaymentResponseDto>>(`/api/payments?${params.toString()}`);
   return data;
+}
+
+export async function getPaymentsByUser(userId: string): Promise<PaymentResponseDto[]> {
+  const { data } = await http.get<ApiSuccessResponse<PaymentResponseDto[]>>(
+    `/api/payments/users/${userId}/payments`
+  );
+  return data.results;
 }

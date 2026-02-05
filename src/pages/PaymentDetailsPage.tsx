@@ -13,8 +13,11 @@ import {
 } from "@mui/material";
 
 import { getPaymentByOrderId, type PaymentResponseDto } from "../api/payments.api";
+import { useTranslation } from "react-i18next";
 
 export default function PaymentDetailsPage() {
+  const { t } = useTranslation();
+
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
 
@@ -25,7 +28,7 @@ export default function PaymentDetailsPage() {
   React.useEffect(() => {
     const run = async () => {
       if (!orderId) {
-        setError("orderId відсутній у URL");
+        setError(t("pages.paymentDetails.errors.missingOrderId"));
         setLoading(false);
         return;
       }
@@ -38,7 +41,10 @@ export default function PaymentDetailsPage() {
         setPayment(p);
       } catch (e: any) {
         // якщо payment не знайдено — бек може дати 404
-        const msg = e?.response?.data?.message ?? e?.message ?? "Не вдалося завантажити payment";
+        const msg =
+          e?.response?.data?.message ??
+          e?.message ??
+          t("pages.paymentDetails.errors.loadFailed");
         setError(msg);
       } finally {
         setLoading(false);
@@ -46,14 +52,14 @@ export default function PaymentDetailsPage() {
     };
 
     run();
-  }, [orderId]);
+  }, [orderId, t]);
 
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", p: 2 }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
-        <Typography variant="h4">Payment</Typography>
+        <Typography variant="h4">{t("pages.paymentDetails.title")}</Typography>
         <Button variant="outlined" onClick={() => navigate(-1)}>
-          Back
+          {t("pages.paymentDetails.actions.back")}
         </Button>
       </Box>
 
@@ -72,19 +78,19 @@ export default function PaymentDetailsPage() {
       {!loading && !error && payment && (
         <Card variant="outlined" sx={{ mt: 2 }}>
           <CardContent>
-            <Typography variant="h6">Payment info</Typography>
+            <Typography variant="h6">{t("pages.paymentDetails.card.title")}</Typography>
             <Divider sx={{ my: 2 }} />
 
             <Stack spacing={1}>
-              <Row label="Payment ID" value={payment.id} mono />
-              <Row label="Order ID" value={payment.orderId} mono />
-              <Row label="Status" value={payment.status} />
-              <Row label="Method" value={payment.paymentMethod} />
-              <Row label="Amount" value={payment.amount} />
-              <Row label="Paid at" value={payment.paidAt ?? "—"} />
-              <Row label="Failure reason" value={payment.failureReason ?? "—"} />
-              <Row label="Created at" value={payment.createdAt} />
-              <Row label="Updated at" value={payment.updatedAt} />
+              <Row label={t("pages.paymentDetails.fields.paymentId")} value={String(payment.id)} mono />
+              <Row label={t("pages.paymentDetails.fields.orderId")} value={String(payment.orderId)} mono />
+              <Row label={t("pages.paymentDetails.fields.status")} value={String(payment.status)} />
+              <Row label={t("pages.paymentDetails.fields.method")} value={String(payment.paymentMethod)} />
+              <Row label={t("pages.paymentDetails.fields.amount")} value={String(payment.amount)} />
+              <Row label={t("pages.paymentDetails.fields.paidAt")} value={String(payment.paidAt ?? "—")} />
+              <Row label={t("pages.paymentDetails.fields.failureReason")} value={String(payment.failureReason ?? "—")} />
+              <Row label={t("pages.paymentDetails.fields.createdAt")} value={String(payment.createdAt)} />
+              <Row label={t("pages.paymentDetails.fields.updatedAt")} value={String(payment.updatedAt)} />
             </Stack>
           </CardContent>
         </Card>

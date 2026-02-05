@@ -1,11 +1,15 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Alert, Box, Button, Container, Stack, TextField, Typography } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState<string | null>(null);
 
   const auth = useAuth();
@@ -19,7 +23,10 @@ export default function LoginPage() {
       await auth.login(email, password);
       navigate("/tours");
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Login failed";
+      const msg =
+        err?.response?.data?.message ??
+        err?.response?.data?.statusMessage ??
+        t("pages.login.errors.loginFailed");
       setError(msg);
     }
   };
@@ -28,7 +35,7 @@ export default function LoginPage() {
     <Container maxWidth="sm">
       <Box sx={{ mt: 10 }}>
         <Typography variant="h5" sx={{ mb: 2 }}>
-          Login
+          {t("pages.login.title")}
         </Typography>
 
         <Box component="form" onSubmit={onSubmit}>
@@ -36,13 +43,14 @@ export default function LoginPage() {
             {error && <Alert severity="error">{error}</Alert>}
 
             <TextField
-              label="Email"
+              label={t("pages.login.fields.email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               fullWidth
             />
+
             <TextField
-              label="Password"
+              label={t("pages.login.fields.password")}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -50,11 +58,11 @@ export default function LoginPage() {
             />
 
             <Button variant="contained" type="submit">
-              Sign in
+              {t("pages.login.buttons.signIn")}
             </Button>
 
-           <Button component={RouterLink} to="/register" variant="text" type="button">
-                Create account
+            <Button component={RouterLink} to="/register" variant="text" type="button">
+              {t("pages.login.buttons.createAccount")}
             </Button>
           </Stack>
         </Box>

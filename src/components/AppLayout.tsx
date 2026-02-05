@@ -9,11 +9,14 @@ import {
   MenuItem,
   ListItemIcon,
   Divider,
+  FormControl,
+  Select,
 } from "@mui/material";
 import { Link as RouterLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
+import { useTranslation } from "react-i18next";
 
 function normalizeRole(r: string) {
   return (r ?? "").trim().toUpperCase();
@@ -36,6 +39,7 @@ function hasAnyRole(userRoles: string[], allowed: string[]) {
 export default function AppLayout() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
@@ -62,6 +66,8 @@ export default function AppLayout() {
     navigate("/login");
   };
 
+  const currentLang = i18n.language?.startsWith("uk") ? "uk" : "en";
+
   return (
     <Box>
       <AppBar position="static">
@@ -72,23 +78,40 @@ export default function AppLayout() {
             sx={{ flexGrow: 1, cursor: "pointer" }}
             onClick={() => navigate("/home")}
           >
-            Travel Agency
+            {t("app.brand")}
           </Typography>
 
           <Button color="inherit" component={RouterLink} to="/tours">
-            Tours
+            {t("nav.tours")}
           </Button>
 
           <Button color="inherit" component={RouterLink} to="/orders">
-            Orders
+            {t("nav.orders")}
           </Button>
 
           {/* ✅ Admin visible only for ADMIN/MANAGER */}
           {canSeeAdmin && (
             <Button color="inherit" component={RouterLink} to="/admin/users">
-              Admin
+              {t("nav.admin")}
             </Button>
           )}
+
+          {/* ✅ Language switcher */}
+          <FormControl size="small" sx={{ ml: 1, minWidth: 72 }}>
+            <Select
+              value={currentLang}
+              onChange={(e) => i18n.changeLanguage(String(e.target.value))}
+              sx={{
+                color: "inherit",
+                ".MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.5)" },
+                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.8)" },
+                ".MuiSvgIcon-root": { color: "inherit" },
+              }}
+            >
+              <MenuItem value="uk">UA</MenuItem>
+              <MenuItem value="en">EN</MenuItem>
+            </Select>
+          </FormControl>
 
           {/* Email dropdown */}
           <Button
@@ -99,7 +122,7 @@ export default function AppLayout() {
             aria-haspopup="true"
             aria-expanded={menuOpen ? "true" : undefined}
           >
-            {auth.email ?? "Account"}
+            {auth.email ?? t("menu.account")}
           </Button>
 
           <Menu
@@ -114,7 +137,7 @@ export default function AppLayout() {
               <ListItemIcon>
                 <AccountCircleIcon fontSize="small" />
               </ListItemIcon>
-              Profile
+              {t("menu.profile")}
             </MenuItem>
 
             <Divider />
@@ -123,7 +146,7 @@ export default function AppLayout() {
               <ListItemIcon>
                 <LogoutIcon fontSize="small" />
               </ListItemIcon>
-              Logout
+              {t("menu.logout")}
             </MenuItem>
           </Menu>
         </Toolbar>

@@ -18,6 +18,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import * as toursApi from "../api/tours.api";
 import type { TourResponseDto } from "../types/response";
+import { useTranslation } from "react-i18next";
 
 // enums (adjust if your backend uses different names)
 const TOUR_TYPES = ["REST", "EXCURSION", "SHOPPING"] as const;
@@ -31,7 +32,9 @@ function toIsoLocalDateTimeInput(value?: string | null) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
+    d.getMinutes()
+  )}`;
 }
 
 function fromDateTimeLocalToIso(value: string) {
@@ -43,6 +46,7 @@ function fromDateTimeLocalToIso(value: string) {
 }
 
 export default function TourEditPage() {
+  const { t } = useTranslation();
   const { tourId } = useParams<{ tourId: string }>();
   const navigate = useNavigate();
 
@@ -73,39 +77,43 @@ export default function TourEditPage() {
 
   const isEdit = useMemo(() => Boolean(tourId), [tourId]);
 
+  const trTourType = (v: any) => t(`enums.tourType.${String(v)}`);
+  const trTransferType = (v: any) => t(`enums.transferType.${String(v)}`);
+  const trHotelType = (v: any) => t(`enums.hotelType.${String(v)}`);
+
   const load = async () => {
     setError(null);
     setLoading(true);
     try {
       if (tourId) {
-        const t = await toursApi.getTourById(tourId);
-        setTour(t);
+        const tt = await toursApi.getTourById(tourId);
+        setTour(tt);
 
         // hydrate form
-        setTitle(t.title ?? "");
-        setShortDescription(t.shortDescription ?? "");
-        setLongDescription(t.longDescription ?? "");
+        setTitle(tt.title ?? "");
+        setShortDescription(tt.shortDescription ?? "");
+        setLongDescription(tt.longDescription ?? "");
 
-        setPrice(t.price != null ? String(t.price) : "");
-        setCountry(t.country ?? "");
-        setCity(t.city ?? "");
+        setPrice(tt.price != null ? String(tt.price) : "");
+        setCountry(tt.country ?? "");
+        setCity(tt.city ?? "");
 
-        setActive(Boolean(t.active));
-        setHot(Boolean(t.hot));
-        setCapacity(t.capacity != null ? String(t.capacity) : "");
+        setActive(Boolean(tt.active));
+        setHot(Boolean(tt.hot));
+        setCapacity(tt.capacity != null ? String(tt.capacity) : "");
 
-        setTourType(String(t.tourType ?? TOUR_TYPES[0]));
-        setTransferType(String(t.transferType ?? TRANSFER_TYPES[0]));
-        setHotelType(String(t.hotelType ?? HOTEL_TYPES[0]));
+        setTourType(String(tt.tourType ?? TOUR_TYPES[0]));
+        setTransferType(String(tt.transferType ?? TRANSFER_TYPES[0]));
+        setHotelType(String(tt.hotelType ?? HOTEL_TYPES[0]));
 
-        setCheckIn(toIsoLocalDateTimeInput(t.checkIn ? String(t.checkIn) : null));
-        setCheckOut(toIsoLocalDateTimeInput(t.checkOut ? String(t.checkOut) : null));
+        setCheckIn(toIsoLocalDateTimeInput(tt.checkIn ? String(tt.checkIn) : null));
+        setCheckOut(toIsoLocalDateTimeInput(tt.checkOut ? String(tt.checkOut) : null));
       } else {
         // create defaults
         setTour(null);
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to load tour";
+      const msg = err?.response?.data?.message ?? t("pages.tourEdit.errors.loadFailed");
       setError(msg);
     } finally {
       setLoading(false);
@@ -118,16 +126,16 @@ export default function TourEditPage() {
   }, [tourId]);
 
   const validate = () => {
-    if (!title.trim()) return "Title is required";
-    if (!shortDescription.trim()) return "Short description is required";
-    if (!longDescription.trim()) return "Long description is required";
-    if (!country.trim()) return "Country is required";
-    if (!city.trim()) return "City is required";
-    if (!price || Number(price) <= 0) return "Price must be > 0";
-    if (!capacity || Number(capacity) <= 0) return "Capacity must be > 0";
-    if (!checkIn) return "Check-in is required";
-    if (!checkOut) return "Check-out is required";
-    if (new Date(checkOut).getTime() <= new Date(checkIn).getTime()) return "Check-out must be after check-in";
+    if (!title.trim()) return t("pages.tourEdit.validation.titleRequired");
+    if (!shortDescription.trim()) return t("pages.tourEdit.validation.shortRequired");
+    if (!longDescription.trim()) return t("pages.tourEdit.validation.longRequired");
+    if (!country.trim()) return t("pages.tourEdit.validation.countryRequired");
+    if (!city.trim()) return t("pages.tourEdit.validation.cityRequired");
+    if (!price || Number(price) <= 0) return t("pages.tourEdit.validation.pricePositive");
+    if (!capacity || Number(capacity) <= 0) return t("pages.tourEdit.validation.capacityPositive");
+    if (!checkIn) return t("pages.tourEdit.validation.checkInRequired");
+    if (!checkOut) return t("pages.tourEdit.validation.checkOutRequired");
+    if (new Date(checkOut).getTime() <= new Date(checkIn).getTime()) return t("pages.tourEdit.validation.checkOutAfter");
     return null;
   };
 
@@ -167,7 +175,7 @@ export default function TourEditPage() {
         navigate(`/tours/${created.id}`);
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to save tour";
+      const msg = err?.response?.data?.message ?? t("pages.tourEdit.errors.saveFailed");
       setError(msg);
     } finally {
       setBusy(false);
@@ -186,13 +194,15 @@ export default function TourEditPage() {
     <Box sx={{ maxWidth: 1100, mx: "auto", p: 2 }}>
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
         <Button variant="outlined" onClick={() => navigate(isEdit ? `/tours/${tourId}` : "/tours")}>
-          Back
+          {t("pages.tourEdit.actions.back")}
         </Button>
+
         <Typography variant="h5" sx={{ flexGrow: 1 }}>
-          {isEdit ? "Edit tour" : "Create tour"}
+          {isEdit ? t("pages.tourEdit.title.edit") : t("pages.tourEdit.title.create")}
         </Typography>
+
         <Button variant="contained" onClick={handleSave} disabled={busy}>
-          Save
+          {t("common.save")}
         </Button>
       </Stack>
 
@@ -204,21 +214,23 @@ export default function TourEditPage() {
 
       <Card variant="outlined" sx={{ borderRadius: 3, overflow: "hidden" }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6">Main info</Typography>
+          <Typography variant="h6">{t("pages.tourEdit.sections.mainInfo")}</Typography>
           <Divider sx={{ my: 2 }} />
 
           <Stack spacing={2}>
-            <TextField label="Title" value={title} onChange={(e) => setTitle(e.target.value)} fullWidth />
+            <TextField label={t("pages.tourEdit.fields.title")} value={title} onChange={(e) => setTitle(e.target.value)} fullWidth />
+
             <TextField
-              label="Short description"
+              label={t("pages.tourEdit.fields.shortDescription")}
               value={shortDescription}
               onChange={(e) => setShortDescription(e.target.value)}
               fullWidth
               multiline
               minRows={2}
             />
+
             <TextField
-              label="Long description"
+              label={t("pages.tourEdit.fields.longDescription")}
               value={longDescription}
               onChange={(e) => setLongDescription(e.target.value)}
               fullWidth
@@ -228,13 +240,13 @@ export default function TourEditPage() {
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
               <TextField
-                label="Price"
+                label={t("pages.tourEdit.fields.price")}
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 fullWidth
               />
               <TextField
-                label="Capacity"
+                label={t("pages.tourEdit.fields.capacity")}
                 value={capacity}
                 onChange={(e) => setCapacity(e.target.value)}
                 fullWidth
@@ -242,43 +254,59 @@ export default function TourEditPage() {
             </Stack>
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-              <TextField label="Country" value={country} onChange={(e) => setCountry(e.target.value)} fullWidth />
-              <TextField label="City" value={city} onChange={(e) => setCity(e.target.value)} fullWidth />
+              <TextField
+                label={t("pages.tourEdit.fields.country")}
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                fullWidth
+              />
+              <TextField
+                label={t("pages.tourEdit.fields.city")}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                fullWidth
+              />
             </Stack>
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-              <TextField select label="Tour type" value={tourType} onChange={(e) => setTourType(e.target.value)} fullWidth>
+              <TextField
+                select
+                label={t("pages.tourEdit.fields.tourType")}
+                value={tourType}
+                onChange={(e) => setTourType(e.target.value)}
+                fullWidth
+              >
                 {TOUR_TYPES.map((x) => (
                   <MenuItem key={x} value={x}>
-                    {x}
+                    {trTourType(x)}
                   </MenuItem>
                 ))}
               </TextField>
 
               <TextField
                 select
-                label="Transfer type"
+                label={t("pages.tourEdit.fields.transferType")}
                 value={transferType}
                 onChange={(e) => setTransferType(e.target.value)}
                 fullWidth
               >
                 {TRANSFER_TYPES.map((x) => (
                   <MenuItem key={x} value={x}>
-                    {x}
+                    {trTransferType(x)}
                   </MenuItem>
                 ))}
               </TextField>
 
               <TextField
                 select
-                label="Hotel type"
+                label={t("pages.tourEdit.fields.hotelType")}
                 value={hotelType}
                 onChange={(e) => setHotelType(e.target.value)}
                 fullWidth
               >
                 {HOTEL_TYPES.map((x) => (
                   <MenuItem key={x} value={x}>
-                    {x}
+                    {trHotelType(x)}
                   </MenuItem>
                 ))}
               </TextField>
@@ -286,7 +314,7 @@ export default function TourEditPage() {
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
               <TextField
-                label="Check-in"
+                label={t("pages.tourEdit.fields.checkIn")}
                 type="datetime-local"
                 value={checkIn}
                 onChange={(e) => setCheckIn(e.target.value)}
@@ -294,7 +322,7 @@ export default function TourEditPage() {
                 InputLabelProps={{ shrink: true }}
               />
               <TextField
-                label="Check-out"
+                label={t("pages.tourEdit.fields.checkOut")}
                 type="datetime-local"
                 value={checkOut}
                 onChange={(e) => setCheckOut(e.target.value)}
@@ -304,8 +332,14 @@ export default function TourEditPage() {
             </Stack>
 
             <Stack direction="row" spacing={3}>
-              <FormControlLabel control={<Switch checked={active} onChange={(e) => setActive(e.target.checked)} />} label="Active" />
-              <FormControlLabel control={<Switch checked={hot} onChange={(e) => setHot(e.target.checked)} />} label="Hot" />
+              <FormControlLabel
+                control={<Switch checked={active} onChange={(e) => setActive(e.target.checked)} />}
+                label={t("pages.tourEdit.fields.active")}
+              />
+              <FormControlLabel
+                control={<Switch checked={hot} onChange={(e) => setHot(e.target.checked)} />}
+                label={t("pages.tourEdit.fields.hot")}
+              />
             </Stack>
           </Stack>
         </CardContent>

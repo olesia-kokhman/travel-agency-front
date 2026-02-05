@@ -1,8 +1,10 @@
 // src/main.tsx
-import React from "react";
+import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { CssBaseline } from "@mui/material";
+import { CssBaseline, CircularProgress, Box } from "@mui/material";
+
+import "./i18n"; // ✅ MUST be before render
 
 import { AuthProvider } from "./auth/AuthContext";
 import { RequireAuth } from "./auth/RequireAuth";
@@ -31,67 +33,82 @@ import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 import AdminOrderDetailsPage from "./pages/admin/AdminOrderDetailsPage";
 import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <CssBaseline />
+function AppBootstrap() {
+  return (
+    <React.StrictMode>
+      <CssBaseline />
 
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* PUBLIC */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* PUBLIC */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* PROTECTED */}
-          <Route element={<RequireAuth />}>
-            <Route element={<AppLayout />}>
-              <Route path="/home" element={<HomePage />} />
+            {/* PROTECTED */}
+            <Route element={<RequireAuth />}>
+              <Route element={<AppLayout />}>
+                <Route path="/home" element={<HomePage />} />
 
-              {/* TOURS */}
-              <Route path="/tours" element={<ToursPage />} />
-              <Route path="/tours/:tourId" element={<TourDetailsPage />} />
+                {/* TOURS */}
+                <Route path="/tours" element={<ToursPage />} />
+                <Route path="/tours/:tourId" element={<TourDetailsPage />} />
 
-              {/* Admin-only create/update tour */}
-              <Route element={<RequireRole anyOf={["ADMIN"]} redirectTo="/tours" />}>
-                <Route path="/tours/new" element={<TourCreatePage />} />
-                <Route path="/tours/:tourId/edit" element={<TourEditPage />} />
-              </Route>
-
-              {/* ORDERS */}
-              <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
-
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/payments/orders/:orderId" element={<PaymentDetailsPage />} />
-
-              {/* ✅ ADMIN (ADMIN + MANAGER only) */}
-              <Route element={<RequireRole anyOf={["ADMIN", "MANAGER"]} redirectTo="/home" />}>
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<Navigate to="/admin/users" replace />} />
-
-                  {/* users */}
-                  <Route path="users" element={<AdminUsersPage />} />
-                  <Route path="users/:userId" element={<AdminUserDetailsPage />} />
-
-                  {/* orders */}
-                  <Route path="orders" element={<AdminOrdersPage />} />
-                  <Route path="orders/:orderId" element={<AdminOrderDetailsPage />} />
-
-                  {/* payments */}
-                  <Route path="payments" element={<AdminPaymentsPage />} />
+                {/* Admin-only create/update tour */}
+                <Route element={<RequireRole anyOf={["ADMIN"]} redirectTo="/tours" />}>
+                  <Route path="/tours/new" element={<TourCreatePage />} />
+                  <Route path="/tours/:tourId/edit" element={<TourEditPage />} />
                 </Route>
+
+                {/* ORDERS */}
+                <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
+
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/payments/orders/:orderId" element={<PaymentDetailsPage />} />
+
+                {/* ✅ ADMIN (ADMIN + MANAGER only) */}
+                <Route element={<RequireRole anyOf={["ADMIN", "MANAGER"]} redirectTo="/home" />}>
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<Navigate to="/admin/users" replace />} />
+
+                    {/* users */}
+                    <Route path="users" element={<AdminUsersPage />} />
+                    <Route path="users/:userId" element={<AdminUserDetailsPage />} />
+
+                    {/* orders */}
+                    <Route path="orders" element={<AdminOrdersPage />} />
+                    <Route path="orders/:orderId" element={<AdminOrderDetailsPage />} />
+
+                    {/* payments */}
+                    <Route path="payments" element={<AdminPaymentsPage />} />
+                  </Route>
+                </Route>
+
+                {/* default */}
+                <Route path="/" element={<Navigate to="/home" replace />} />
+                <Route path="*" element={<Navigate to="/home" replace />} />
               </Route>
-
-              {/* default */}
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="*" element={<Navigate to="/home" replace />} />
             </Route>
-          </Route>
 
-          {/* fallback for anything else */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  </React.StrictMode>
+            {/* fallback for anything else */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </React.StrictMode>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  // ✅ When i18n loads translations async (http-backend), Suspense prevents blank UI
+  <Suspense
+    fallback={
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <CircularProgress />
+      </Box>
+    }
+  >
+    <AppBootstrap />
+  </Suspense>
 );

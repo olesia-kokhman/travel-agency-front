@@ -24,6 +24,7 @@ import {
 import { http } from "../api/http";
 import { createPayment, getPaymentByOrderId, type PaymentResponseDto } from "../api/payments.api";
 import { createReview, updateReview, type ReviewResponseDto } from "../api/reviews.api";
+import { useTranslation } from "react-i18next";
 
 type ApiSuccessResponse<T> = {
   status: string;
@@ -55,6 +56,8 @@ function statusColor(status: string): "default" | "success" | "warning" | "error
 }
 
 export default function OrderDetailsPage() {
+  const { t } = useTranslation();
+
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
 
@@ -85,7 +88,7 @@ export default function OrderDetailsPage() {
   React.useEffect(() => {
     const run = async () => {
       if (!orderId) {
-        setError("orderId відсутній у URL");
+        setError(t("pages.orderDetails.errors.missingOrderId"));
         setLoading(false);
         return;
       }
@@ -94,17 +97,15 @@ export default function OrderDetailsPage() {
         setLoading(true);
         setError(null);
 
-        const res = await http.get<ApiSuccessResponse<OrderResponseDto>>(
-          `/api/orders/me/order/${orderId}`
-        );
-
+        const res = await http.get<ApiSuccessResponse<OrderResponseDto>>(`/api/orders/me/order/${orderId}`);
         const o = res.data.results;
+
         setOrder(o);
 
-        // amount в діалозі
+        // amount in dialog
         setAmount(o.totalAmount == null ? "" : String(o.totalAmount));
 
-        // payment (з order або окремо)
+        // payment (from order or separately)
         if (o?.payment) {
           setPayment(o.payment);
         } else {
@@ -122,14 +123,14 @@ export default function OrderDetailsPage() {
           }
         }
       } catch (e: any) {
-        setError(e?.response?.data?.message ?? e?.message ?? "Помилка завантаження ордера");
+        setError(e?.response?.data?.message ?? e?.message ?? t("pages.orderDetails.errors.loadFailed"));
       } finally {
         setLoading(false);
       }
     };
 
     run();
-  }, [orderId]);
+  }, [orderId, t]);
 
   const goToPayment = () => {
     if (!order) return;
@@ -139,7 +140,7 @@ export default function OrderDetailsPage() {
   const goToTour = () => {
     if (!order) return;
     if (!order.tourId) {
-      setError("tourId відсутній у замовленні (не можу перейти на сторінку туру).");
+      setError(t("pages.orderDetails.errors.missingTourId"));
       return;
     }
     navigate(`/tours/${order.tourId}`);
@@ -165,7 +166,7 @@ export default function OrderDetailsPage() {
     const num = Number(normalized.replace(",", "."));
 
     if (!normalized || Number.isNaN(num) || num <= 0) {
-      setPayError("Вкажи коректну суму (більше 0).");
+      setPayError(t("pages.orderDetails.pay.errors.amountInvalid"));
       return;
     }
 
@@ -185,7 +186,7 @@ export default function OrderDetailsPage() {
         e?.response?.data?.message ??
         e?.response?.data?.error ??
         e?.message ??
-        "Не вдалося створити payment";
+        t("pages.orderDetails.pay.errors.createFailed");
       setPayError(msg);
     } finally {
       setPaySubmitting(false);
@@ -219,12 +220,12 @@ export default function OrderDetailsPage() {
     setReviewError(null);
 
     if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
-      setReviewError("Rating має бути від 1 до 5.");
+      setReviewError(t("pages.orderDetails.review.errors.ratingRange"));
       return;
     }
 
     if (reviewComment.length > 2000) {
-      setReviewError("Comment має бути максимум 2000 символів.");
+      setReviewError(t("pages.orderDetails.review.errors.commentMax"));
       return;
     }
 
@@ -244,7 +245,7 @@ export default function OrderDetailsPage() {
         e?.response?.data?.message ??
         e?.response?.data?.error ??
         e?.message ??
-        "Не вдалося зберегти review";
+        t("pages.orderDetails.review.errors.saveFailed");
       setReviewError(msg);
     } finally {
       setReviewSubmitting(false);
@@ -260,10 +261,10 @@ export default function OrderDetailsPage() {
       return (
         <Box>
           <Alert severity="info" sx={{ mb: 1 }}>
-            Замовлення зареєстровано і ще не оплачено.
+            {t("pages.orderDetails.payment.registeredInfo")}
           </Alert>
           <Button variant="contained" color="success" onClick={openPayDialog}>
-            Оплатити
+            {t("pages.orderDetails.payment.payBtn")}
           </Button>
         </Box>
       );
@@ -272,11 +273,7 @@ export default function OrderDetailsPage() {
     if (s === "PAID") {
       if (paymentLoading) return <CircularProgress size={22} />;
       if (!payment) {
-        return (
-          <Alert severity="warning">
-            Статус PAID, але payment не знайдено. Перевір бек/дані.
-          </Alert>
-        );
+        return <Alert severity="warning">{t("pages.orderDetails.payment.paidButMissing")}</Alert>;
       }
 
       return (
@@ -284,14 +281,14 @@ export default function OrderDetailsPage() {
           <CardActionArea onClick={goToPayment}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Payment (натисни, щоб відкрити)
+                {t("pages.orderDetails.payment.cardTitlePaid")}
               </Typography>
               <Divider sx={{ my: 1.5 }} />
               <Stack spacing={0.5}>
-                <Row label="Status" value={payment.status} />
-                <Row label="Method" value={payment.paymentMethod} />
-                <Row label="Amount" value={payment.amount} />
-                <Row label="Paid at" value={payment.paidAt ?? "—"} />
+                <Row label={t("pages.orderDetails.payment.fields.status")} value={String(payment.status)} />
+                <Row label={t("pages.orderDetails.payment.fields.method")} value={String(payment.paymentMethod)} />
+                <Row label={t("pages.orderDetails.payment.fields.amount")} value={String(payment.amount)} />
+                <Row label={t("pages.orderDetails.payment.fields.paidAt")} value={String(payment.paidAt ?? "—")} />
               </Stack>
             </CardContent>
           </CardActionArea>
@@ -303,7 +300,7 @@ export default function OrderDetailsPage() {
       if (paymentLoading) return <CircularProgress size={22} />;
 
       if (!payment) {
-        return <Alert severity="info">Замовлення скасовано. Оплати не було.</Alert>;
+        return <Alert severity="info">{t("pages.orderDetails.payment.cancelledNoPayment")}</Alert>;
       }
 
       return (
@@ -311,15 +308,15 @@ export default function OrderDetailsPage() {
           <CardActionArea onClick={goToPayment}>
             <CardContent>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Payment info (натисни, щоб відкрити)
+                {t("pages.orderDetails.payment.cardTitleInfo")}
               </Typography>
               <Divider sx={{ my: 1.5 }} />
               <Stack spacing={0.5}>
-                <Row label="Status" value={payment.status} />
-                <Row label="Method" value={payment.paymentMethod} />
-                <Row label="Amount" value={payment.amount} />
-                <Row label="Paid at" value={payment.paidAt ?? "—"} />
-                <Row label="Failure reason" value={payment.failureReason ?? "—"} />
+                <Row label={t("pages.orderDetails.payment.fields.status")} value={String(payment.status)} />
+                <Row label={t("pages.orderDetails.payment.fields.method")} value={String(payment.paymentMethod)} />
+                <Row label={t("pages.orderDetails.payment.fields.amount")} value={String(payment.amount)} />
+                <Row label={t("pages.orderDetails.payment.fields.paidAt")} value={String(payment.paidAt ?? "—")} />
+                <Row label={t("pages.orderDetails.payment.fields.failureReason")} value={String(payment.failureReason ?? "—")} />
               </Stack>
             </CardContent>
           </CardActionArea>
@@ -327,7 +324,7 @@ export default function OrderDetailsPage() {
       );
     }
 
-    return <Alert severity="info">Невідомий статус: {order.status}</Alert>;
+    return <Alert severity="info">{t("pages.orderDetails.payment.unknownStatus", { status: order.status })}</Alert>;
   };
 
   const renderReviewBlock = () => {
@@ -337,10 +334,10 @@ export default function OrderDetailsPage() {
       return (
         <Box>
           <Alert severity="info" sx={{ mb: 1 }}>
-            Review ще не додано.
+            {t("pages.orderDetails.review.noneInfo")}
           </Alert>
           <Button variant="contained" color="secondary" onClick={openCreateReview}>
-            Додати review
+            {t("pages.orderDetails.review.addBtn")}
           </Button>
         </Box>
       );
@@ -351,10 +348,10 @@ export default function OrderDetailsPage() {
         <CardContent>
           <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, alignItems: "center" }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Review
+              {t("pages.orderDetails.review.title")}
             </Typography>
             <Button variant="outlined" color="secondary" onClick={openEditReview}>
-              Редагувати
+              {t("pages.orderDetails.review.editBtn")}
             </Button>
           </Box>
 
@@ -363,7 +360,7 @@ export default function OrderDetailsPage() {
           <Stack spacing={1}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
-                Rating:
+                {t("pages.orderDetails.review.fields.rating")}:
               </Typography>
               <Rating value={order.review.rating} readOnly />
               <Typography variant="body2">({order.review.rating})</Typography>
@@ -371,7 +368,7 @@ export default function OrderDetailsPage() {
 
             <Box>
               <Typography variant="body2" color="text.secondary">
-                Comment:
+                {t("pages.orderDetails.review.fields.comment")}:
               </Typography>
               <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                 {order.review.comment || "—"}
@@ -379,7 +376,7 @@ export default function OrderDetailsPage() {
             </Box>
 
             <Typography variant="caption" color="text.secondary">
-              Updated: {order.review.updatedAt}
+              {t("pages.orderDetails.review.fields.updated")}: {String(order.review.updatedAt ?? "—")}
             </Typography>
           </Stack>
         </CardContent>
@@ -391,10 +388,10 @@ export default function OrderDetailsPage() {
     <Box sx={{ maxWidth: 1100, mx: "auto", p: 2 }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          Order details
+          {t("pages.orderDetails.title")}
         </Typography>
         <Button variant="outlined" color="inherit" onClick={() => navigate("/orders")}>
-          Back
+          {t("pages.orderDetails.actions.back")}
         </Button>
       </Box>
 
@@ -412,19 +409,26 @@ export default function OrderDetailsPage() {
 
       {!loading && !error && !order && (
         <Alert severity="info" sx={{ mt: 2 }}>
-          Ордер не знайдений.
+          {t("pages.orderDetails.errors.notFound")}
         </Alert>
       )}
 
       {!loading && !error && order && (
-        <Box sx={{ mt: 2, display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.2fr 0.8fr" }, gap: 2 }}>
+        <Box
+          sx={{
+            mt: 2,
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1.2fr 0.8fr" },
+            gap: 2,
+          }}
+        >
           {/* LEFT */}
           <Card variant="outlined">
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    Order #{order.orderNumber}
+                    {t("pages.orderDetails.header.orderNumber", { orderNumber: order.orderNumber })}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {order.id}
@@ -437,16 +441,16 @@ export default function OrderDetailsPage() {
               <Divider sx={{ my: 2 }} />
 
               <Stack spacing={1.25}>
-                <Row label="Total amount" value={String(order.totalAmount ?? "—")} />
+                <Row label={t("pages.orderDetails.fields.totalAmount")} value={String(order.totalAmount ?? "—")} />
 
                 <Card variant="outlined">
                   <CardActionArea onClick={goToTour}>
                     <CardContent>
                       <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                        Tour
+                        {t("pages.orderDetails.tour.title")}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Натисни, щоб відкрити сторінку туру
+                        {t("pages.orderDetails.tour.hint")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontFamily: "monospace", mt: 0.5 }}>
                         {order.tourId || "—"}
@@ -462,7 +466,7 @@ export default function OrderDetailsPage() {
                             goToTour();
                           }}
                         >
-                          Open tour
+                          {t("pages.orderDetails.tour.openBtn")}
                         </Button>
                       </Box>
                     </CardContent>
@@ -477,7 +481,7 @@ export default function OrderDetailsPage() {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                  Payment
+                  {t("pages.orderDetails.payment.title")}
                 </Typography>
                 {renderPaymentBlock()}
               </CardContent>
@@ -486,7 +490,7 @@ export default function OrderDetailsPage() {
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                  Review
+                  {t("pages.orderDetails.review.title")}
                 </Typography>
                 {renderReviewBlock()}
               </CardContent>
@@ -496,8 +500,8 @@ export default function OrderDetailsPage() {
       )}
 
       {/* Pay dialog */}
-      <Dialog open={payOpen} onClose={() => closePayDialog()} fullWidth maxWidth="sm">
-        <DialogTitle>Оплата замовлення</DialogTitle>
+      <Dialog open={payOpen} onClose={closePayDialog} fullWidth maxWidth="sm">
+        <DialogTitle>{t("pages.orderDetails.pay.dialog.title")}</DialogTitle>
 
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -505,41 +509,44 @@ export default function OrderDetailsPage() {
 
             <TextField
               select
-              label="Payment method"
+              label={t("pages.orderDetails.pay.dialog.fields.method")}
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => setPaymentMethod(String(e.target.value))}
               fullWidth
             >
               {PAYMENT_METHODS.map((m) => (
                 <MenuItem key={m} value={m}>
-                  {m}
+                  {/* якщо не хочеш enum перекладати — заміни на {m} */}
+                  {t(`enums.paymentMethod.${m}`)}
                 </MenuItem>
               ))}
             </TextField>
 
             <TextField
-              label="Amount"
+              label={t("pages.orderDetails.pay.dialog.fields.amount")}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               fullWidth
-              helperText="Формат: 0.01 .. 1000000000.00"
+              helperText={t("pages.orderDetails.pay.dialog.hints.amountFormat")}
             />
           </Stack>
         </DialogContent>
 
         <DialogActions>
           <Button onClick={closePayDialog} disabled={paySubmitting} color="inherit">
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="contained" color="success" onClick={submitPayment} disabled={paySubmitting}>
-            {paySubmitting ? "Processing..." : "Pay"}
+            {paySubmitting ? t("pages.orderDetails.pay.dialog.actions.processing") : t("pages.orderDetails.pay.dialog.actions.pay")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Review dialog (create/update) */}
-      <Dialog open={reviewOpen} onClose={() => closeReviewDialog()} fullWidth maxWidth="sm">
-        <DialogTitle>{order?.review ? "Редагувати review" : "Додати review"}</DialogTitle>
+      <Dialog open={reviewOpen} onClose={closeReviewDialog} fullWidth maxWidth="sm">
+        <DialogTitle>
+          {order?.review ? t("pages.orderDetails.review.dialog.editTitle") : t("pages.orderDetails.review.dialog.createTitle")}
+        </DialogTitle>
 
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -547,38 +554,30 @@ export default function OrderDetailsPage() {
 
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                Rating (1..5)
+                {t("pages.orderDetails.review.dialog.fields.ratingHint")}
               </Typography>
-              <Rating
-                value={reviewRating}
-                onChange={(_, v) => setReviewRating(v ?? 0)}
-              />
+              <Rating value={reviewRating} onChange={(_, v) => setReviewRating(v ?? 0)} />
             </Box>
 
             <TextField
-              label="Comment"
+              label={t("pages.orderDetails.review.dialog.fields.comment")}
               value={reviewComment}
               onChange={(e) => setReviewComment(e.target.value)}
               fullWidth
               multiline
               minRows={4}
               inputProps={{ maxLength: 2000 }}
-              helperText={`${reviewComment.length}/2000`}
+              helperText={t("pages.orderDetails.review.dialog.hints.commentCounter", { count: reviewComment.length })}
             />
           </Stack>
         </DialogContent>
 
         <DialogActions>
           <Button onClick={closeReviewDialog} disabled={reviewSubmitting} color="inherit">
-            Cancel
+            {t("common.cancel")}
           </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={submitReview}
-            disabled={reviewSubmitting}
-          >
-            {reviewSubmitting ? "Saving..." : "Save"}
+          <Button variant="contained" color="secondary" onClick={submitReview} disabled={reviewSubmitting}>
+            {reviewSubmitting ? t("pages.orderDetails.review.dialog.actions.saving") : t("common.save")}
           </Button>
         </DialogActions>
       </Dialog>

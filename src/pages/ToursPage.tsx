@@ -33,6 +33,7 @@ import { useNavigate } from "react-router-dom";
 import * as toursApi from "../api/tours.api";
 import type { TourResponseDto } from "../types/response";
 import { useAuth } from "../auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 // ✅ правильні enum values
 const TOUR_TYPES = ["REST", "EXCURSION", "SHOPPING"] as const;
@@ -106,6 +107,7 @@ function sortToPageable(sort: SortOption): { property: string; direction: "asc" 
 }
 
 export default function ToursPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const auth = useAuth();
 
@@ -132,7 +134,7 @@ export default function ToursPage() {
   const [city, setCity] = useState("");
 
   const [hot, setHot] = useState<boolean | null>(null);
-  const [active, setActive] = useState<boolean | null>(true); // дефолт: показуємо активні
+  const [active, setActive] = useState<boolean | null>(true);
 
   const [minCapacity, setMinCapacity] = useState<string>("");
   const [maxCapacity, setMaxCapacity] = useState<string>("");
@@ -216,7 +218,7 @@ export default function ToursPage() {
       const msg =
         err?.response?.data?.statusMessage ??
         err?.response?.data?.message ??
-        "Failed to load tours";
+        t("pages.tours.errors.loadFailed");
 
       setError(msg);
       setItems([]);
@@ -227,48 +229,119 @@ export default function ToursPage() {
     }
   };
 
-  // при зміні filter/sort/size — повертаємось на першу сторінку
   useEffect(() => {
     setPage(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [filter, sort, size]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [filter, sort, page, size]);
 
   const activeFilterChips = useMemo(() => {
     const chips: { key: string; label: string; onDelete: () => void }[] = [];
 
-    if (isNonEmpty(qDebounced)) chips.push({ key: "q", label: `q: ${qDebounced.trim()}`, onDelete: () => setQ("") });
+    if (isNonEmpty(qDebounced))
+      chips.push({
+        key: "q",
+        label: t("pages.tours.filters.chips.q", { value: qDebounced.trim() }),
+        onDelete: () => setQ(""),
+      });
 
-    if (types.length) chips.push({ key: "types", label: `types: ${types.join(", ")}`, onDelete: () => setTypes([]) });
+    if (types.length)
+      chips.push({
+        key: "types",
+        label: t("pages.tours.filters.chips.types", { value: types.join(", ") }),
+        onDelete: () => setTypes([]),
+      });
+
     if (transferTypes.length)
       chips.push({
         key: "transferTypes",
-        label: `transfer: ${transferTypes.join(", ")}`,
+        label: t("pages.tours.filters.chips.transferTypes", { value: transferTypes.join(", ") }),
         onDelete: () => setTransferTypes([]),
       });
+
     if (hotelTypes.length)
-      chips.push({ key: "hotelTypes", label: `hotel: ${hotelTypes.join(", ")}`, onDelete: () => setHotelTypes([]) });
+      chips.push({
+        key: "hotelTypes",
+        label: t("pages.tours.filters.chips.hotelTypes", { value: hotelTypes.join(", ") }),
+        onDelete: () => setHotelTypes([]),
+      });
 
-    if (isNonEmpty(minPrice)) chips.push({ key: "minPrice", label: `minPrice: ${minPrice}`, onDelete: () => setMinPrice("") });
-    if (isNonEmpty(maxPrice)) chips.push({ key: "maxPrice", label: `maxPrice: ${maxPrice}`, onDelete: () => setMaxPrice("") });
+    if (isNonEmpty(minPrice))
+      chips.push({
+        key: "minPrice",
+        label: t("pages.tours.filters.chips.minPrice", { value: minPrice }),
+        onDelete: () => setMinPrice(""),
+      });
 
-    if (isNonEmpty(country)) chips.push({ key: "country", label: `country: ${country}`, onDelete: () => setCountry("") });
-    if (isNonEmpty(city)) chips.push({ key: "city", label: `city: ${city}`, onDelete: () => setCity("") });
+    if (isNonEmpty(maxPrice))
+      chips.push({
+        key: "maxPrice",
+        label: t("pages.tours.filters.chips.maxPrice", { value: maxPrice }),
+        onDelete: () => setMaxPrice(""),
+      });
 
-    if (typeof hot === "boolean") chips.push({ key: "hot", label: `hot: ${hot}`, onDelete: () => setHot(null) });
-    if (typeof active === "boolean") chips.push({ key: "active", label: `active: ${active}`, onDelete: () => setActive(null) });
+    if (isNonEmpty(country))
+      chips.push({
+        key: "country",
+        label: t("pages.tours.filters.chips.country", { value: country }),
+        onDelete: () => setCountry(""),
+      });
+
+    if (isNonEmpty(city))
+      chips.push({
+        key: "city",
+        label: t("pages.tours.filters.chips.city", { value: city }),
+        onDelete: () => setCity(""),
+      });
+
+    if (typeof hot === "boolean")
+      chips.push({
+        key: "hot",
+        label: t("pages.tours.filters.chips.hot", { value: String(hot) }),
+        onDelete: () => setHot(null),
+      });
+
+    if (typeof active === "boolean")
+      chips.push({
+        key: "active",
+        label: t("pages.tours.filters.chips.active", { value: String(active) }),
+        onDelete: () => setActive(null),
+      });
 
     if (isNonEmpty(minCapacity))
-      chips.push({ key: "minCapacity", label: `minCap: ${minCapacity}`, onDelete: () => setMinCapacity("") });
+      chips.push({
+        key: "minCapacity",
+        label: t("pages.tours.filters.chips.minCapacity", { value: minCapacity }),
+        onDelete: () => setMinCapacity(""),
+      });
+
     if (isNonEmpty(maxCapacity))
-      chips.push({ key: "maxCapacity", label: `maxCap: ${maxCapacity}`, onDelete: () => setMaxCapacity("") });
+      chips.push({
+        key: "maxCapacity",
+        label: t("pages.tours.filters.chips.maxCapacity", { value: maxCapacity }),
+        onDelete: () => setMaxCapacity(""),
+      });
 
     return chips;
-  }, [qDebounced, types, transferTypes, hotelTypes, minPrice, maxPrice, country, city, hot, active, minCapacity, maxCapacity]);
+  }, [
+    t,
+    qDebounced,
+    types,
+    transferTypes,
+    hotelTypes,
+    minPrice,
+    maxPrice,
+    country,
+    city,
+    hot,
+    active,
+    minCapacity,
+    maxCapacity,
+  ]);
 
   const clearAllFilters = () => {
     setQ("");
@@ -288,7 +361,7 @@ export default function ToursPage() {
   const handleFavoriteStub = (e: React.MouseEvent, tour: TourResponseDto) => {
     e.stopPropagation();
     e.preventDefault();
-    alert(`(Stub) Added to favorites: ${tour.title}`);
+    alert(t("pages.tours.alerts.favoriteStub", { title: tour.title }));
   };
 
   const handleEdit = (e: React.MouseEvent, tourId: string) => {
@@ -301,14 +374,14 @@ export default function ToursPage() {
     e.stopPropagation();
     e.preventDefault();
 
-    if (!confirm("Delete this tour?")) return;
+    if (!confirm(t("pages.tours.confirm.delete"))) return;
 
     setBusyId(tourId);
     try {
       await toursApi.deleteTour(tourId);
       await load();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to delete tour";
+      const msg = err?.response?.data?.message ?? t("pages.tours.errors.deleteFailed");
       alert(msg);
     } finally {
       setBusyId(null);
@@ -320,26 +393,30 @@ export default function ToursPage() {
     e.preventDefault();
 
     const next = !Boolean(tour.hot);
-    const label = next ? "Make HOT" : "Remove HOT";
-    if (!confirm(`${label} for "${tour.title}"?`)) return;
+    const label = next ? t("pages.tours.actions.makeHot") : t("pages.tours.actions.unmakeHot");
+    if (!confirm(t("pages.tours.confirm.toggleHot", { action: label, title: tour.title }))) return;
 
     setBusyId(tour.id);
     try {
       await toursApi.updateTourHot(tour.id, { hot: next });
       await load();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to update HOT";
+      const msg = err?.response?.data?.message ?? t("pages.tours.errors.updateHotFailed");
       alert(msg);
     } finally {
       setBusyId(null);
     }
   };
 
+  const trTourType = (v: any) => t(`enums.tourType.${String(v)}`);
+  const trTransferType = (v: any) => t(`enums.transferType.${String(v)}`);
+  const trHotelType = (v: any) => t(`enums.hotelType.${String(v)}`);
+
   return (
     <Stack spacing={2}>
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Typography variant="h5">Tours</Typography>
+        <Typography variant="h5">{t("pages.tours.title")}</Typography>
 
         {isAdmin && (
           <Button
@@ -347,7 +424,7 @@ export default function ToursPage() {
             onClick={() => navigate("/tours/new")}
             sx={{ borderRadius: 2, textTransform: "none" }}
           >
-            + Add tour
+            {t("pages.tours.actions.addTour")}
           </Button>
         )}
       </Stack>
@@ -359,35 +436,35 @@ export default function ToursPage() {
             <TextField
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              label="Search"
-              placeholder="title/description…"
+              label={t("pages.tours.search.label")}
+              placeholder={t("pages.tours.search.placeholder")}
               fullWidth
               size="small"
             />
 
             <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel id="sort-label">Sort</InputLabel>
+              <InputLabel id="sort-label">{t("pages.tours.sort.label")}</InputLabel>
               <Select
                 labelId="sort-label"
-                label="Sort"
+                label={t("pages.tours.sort.label")}
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
               >
-                <MenuItem value="HOT_DESC">Hot first</MenuItem>
-                <MenuItem value="PRICE_ASC">Price: low → high</MenuItem>
-                <MenuItem value="PRICE_DESC">Price: high → low</MenuItem>
-                <MenuItem value="CHECKIN_ASC">Check-in: early → late</MenuItem>
-                <MenuItem value="CHECKIN_DESC">Check-in: late → early</MenuItem>
-                <MenuItem value="TITLE_ASC">Title: A → Z</MenuItem>
-                <MenuItem value="TITLE_DESC">Title: Z → A</MenuItem>
+                <MenuItem value="HOT_DESC">{t("pages.tours.sort.hotFirst")}</MenuItem>
+                <MenuItem value="PRICE_ASC">{t("pages.tours.sort.priceAsc")}</MenuItem>
+                <MenuItem value="PRICE_DESC">{t("pages.tours.sort.priceDesc")}</MenuItem>
+                <MenuItem value="CHECKIN_ASC">{t("pages.tours.sort.checkInAsc")}</MenuItem>
+                <MenuItem value="CHECKIN_DESC">{t("pages.tours.sort.checkInDesc")}</MenuItem>
+                <MenuItem value="TITLE_ASC">{t("pages.tours.sort.titleAsc")}</MenuItem>
+                <MenuItem value="TITLE_DESC">{t("pages.tours.sort.titleDesc")}</MenuItem>
               </Select>
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel id="size-label">Per page</InputLabel>
+              <InputLabel id="size-label">{t("pages.tours.pagination.perPage")}</InputLabel>
               <Select
                 labelId="size-label"
-                label="Per page"
+                label={t("pages.tours.pagination.perPage")}
                 value={String(size)}
                 onChange={(e) => setSize(Number(e.target.value))}
               >
@@ -404,7 +481,7 @@ export default function ToursPage() {
                 onClick={() => setShowFilters((v) => !v)}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Filters
+                {t("pages.tours.filters.toggle")}
               </Button>
 
               <Button
@@ -413,7 +490,7 @@ export default function ToursPage() {
                 onClick={clearAllFilters}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Reset
+                {t("pages.tours.filters.reset")}
               </Button>
             </Stack>
           </Stack>
@@ -426,14 +503,14 @@ export default function ToursPage() {
                 <TextField
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
-                  label="Country"
+                  label={t("pages.tours.filters.country")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  label="City"
+                  label={t("pages.tours.filters.city")}
                   size="small"
                   fullWidth
                 />
@@ -443,14 +520,14 @@ export default function ToursPage() {
                 <TextField
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
-                  label="Min price"
+                  label={t("pages.tours.filters.minPrice")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
-                  label="Max price"
+                  label={t("pages.tours.filters.maxPrice")}
                   size="small"
                   fullWidth
                 />
@@ -460,14 +537,14 @@ export default function ToursPage() {
                 <TextField
                   value={minCapacity}
                   onChange={(e) => setMinCapacity(e.target.value)}
-                  label="Min capacity"
+                  label={t("pages.tours.filters.minCapacity")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={maxCapacity}
                   onChange={(e) => setMaxCapacity(e.target.value)}
-                  label="Max capacity"
+                  label={t("pages.tours.filters.maxCapacity")}
                   size="small"
                   fullWidth
                 />
@@ -475,51 +552,51 @@ export default function ToursPage() {
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
                 <FormControl size="small" fullWidth>
-                  <InputLabel id="types-label">Tour types</InputLabel>
+                  <InputLabel id="types-label">{t("pages.tours.filters.tourTypes")}</InputLabel>
                   <Select
                     labelId="types-label"
-                    label="Tour types"
+                    label={t("pages.tours.filters.tourTypes")}
                     multiple
                     value={types}
                     onChange={(e) => setTypes(e.target.value as string[])}
                   >
                     {TOUR_TYPES.map((x) => (
                       <MenuItem key={x} value={x}>
-                        {x}
+                        {trTourType(x)}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
 
                 <FormControl size="small" fullWidth>
-                  <InputLabel id="transfer-label">Transfer types</InputLabel>
+                  <InputLabel id="transfer-label">{t("pages.tours.filters.transferTypes")}</InputLabel>
                   <Select
                     labelId="transfer-label"
-                    label="Transfer types"
+                    label={t("pages.tours.filters.transferTypes")}
                     multiple
                     value={transferTypes}
                     onChange={(e) => setTransferTypes(e.target.value as string[])}
                   >
                     {TRANSFER_TYPES.map((x) => (
                       <MenuItem key={x} value={x}>
-                        {x}
+                        {trTransferType(x)}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
 
                 <FormControl size="small" fullWidth>
-                  <InputLabel id="hotel-label">Hotel types</InputLabel>
+                  <InputLabel id="hotel-label">{t("pages.tours.filters.hotelTypes")}</InputLabel>
                   <Select
                     labelId="hotel-label"
-                    label="Hotel types"
+                    label={t("pages.tours.filters.hotelTypes")}
                     multiple
                     value={hotelTypes}
                     onChange={(e) => setHotelTypes(e.target.value as string[])}
                   >
                     {HOTEL_TYPES.map((x) => (
                       <MenuItem key={x} value={x}>
-                        {x}
+                        {trHotelType(x)}
                       </MenuItem>
                     ))}
                   </Select>
@@ -529,26 +606,20 @@ export default function ToursPage() {
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2} alignItems="center">
                 <FormControlLabel
                   control={
-                    <Switch
-                      checked={hot === true}
-                      onChange={(e) => setHot(e.target.checked ? true : null)}
-                    />
+                    <Switch checked={hot === true} onChange={(e) => setHot(e.target.checked ? true : null)} />
                   }
-                  label="Hot only"
+                  label={t("pages.tours.filters.hotOnly")}
                 />
 
                 <FormControlLabel
                   control={
-                    <Switch
-                      checked={active === true}
-                      onChange={(e) => setActive(e.target.checked ? true : null)}
-                    />
+                    <Switch checked={active === true} onChange={(e) => setActive(e.target.checked ? true : null)} />
                   }
-                  label="Active only"
+                  label={t("pages.tours.filters.activeOnly")}
                 />
 
                 <Typography variant="body2" color="text.secondary" sx={{ ml: { sm: "auto" } }}>
-                  Tip: leave a switch off to not filter by that field.
+                  {t("pages.tours.filters.tip")}
                 </Typography>
               </Stack>
             </Stack>
@@ -572,12 +643,12 @@ export default function ToursPage() {
       {/* Results meta */}
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
         <Typography variant="body2" color="text.secondary">
-          {loading ? "Loading…" : `Found: ${totalElements}`}
+          {loading ? t("common.loading") : t("pages.tours.results.found", { count: totalElements })}
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
         {!loading && totalPages > 1 && (
           <Typography variant="body2" color="text.secondary">
-            Page {page + 1} / {totalPages}
+            {t("pages.tours.pagination.pageOf", { page: page + 1, total: totalPages })}
           </Typography>
         )}
       </Stack>
@@ -587,7 +658,7 @@ export default function ToursPage() {
         <Stack alignItems="center" sx={{ py: 6 }}>
           <CircularProgress />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Loading tours…
+            {t("pages.tours.loadingList")}
           </Typography>
         </Stack>
       ) : (
@@ -633,8 +704,8 @@ export default function ToursPage() {
                         sx={{ position: "absolute", top: 12, left: 12, right: 12 }}
                         alignItems="center"
                       >
-                        {tour.hot && <Chip label="HOT" color="error" size="small" />}
-                        {!tour.active && <Chip label="Inactive" size="small" />}
+                        {tour.hot && <Chip label={t("pages.tours.badges.hot")} color="error" size="small" />}
+                        {!tour.active && <Chip label={t("pages.tours.badges.inactive")} size="small" />}
 
                         <Box sx={{ flexGrow: 1 }} />
 
@@ -677,7 +748,7 @@ export default function ToursPage() {
                                 color={tour.hot ? "inherit" : "error"}
                                 sx={{ borderRadius: 2, textTransform: "none", px: 1.2 }}
                               >
-                                {tour.hot ? "Unmake HOT" : "Make HOT"}
+                                {tour.hot ? t("pages.tours.actions.unmakeHot") : t("pages.tours.actions.makeHot")}
                               </Button>
                             )}
 
@@ -690,7 +761,7 @@ export default function ToursPage() {
                                   variant="outlined"
                                   sx={{ borderRadius: 2, textTransform: "none", px: 1.2 }}
                                 >
-                                  Edit
+                                  {t("common.edit")}
                                 </Button>
 
                                 <Button
@@ -701,7 +772,7 @@ export default function ToursPage() {
                                   color="error"
                                   sx={{ borderRadius: 2, textTransform: "none", px: 1.2 }}
                                 >
-                                  Delete
+                                  {t("common.delete")}
                                 </Button>
                               </>
                             )}
@@ -745,9 +816,9 @@ export default function ToursPage() {
                         </Stack>
 
                         <Stack direction="row" spacing={1} flexWrap="wrap">
-                          <Chip label={String(tour.tourType)} size="small" />
-                          <Chip label={String(tour.transferType)} size="small" />
-                          <Chip label={String(tour.hotelType)} size="small" />
+                          <Chip label={trTourType(tour.tourType)} size="small" />
+                          <Chip label={trTransferType(tour.transferType)} size="small" />
+                          <Chip label={trHotelType(tour.hotelType)} size="small" />
                         </Stack>
                       </Stack>
                     </CardContent>
@@ -759,17 +830,14 @@ export default function ToursPage() {
         </Box>
       )}
 
-      {!loading && !error && items.length === 0 && <Typography variant="body2">No tours found.</Typography>}
+      {!loading && !error && items.length === 0 && (
+        <Typography variant="body2">{t("pages.tours.empty")}</Typography>
+      )}
 
       {/* Pagination */}
       {!loading && totalPages > 1 && (
         <Stack direction="row" justifyContent="center" sx={{ py: 1 }}>
-          <Pagination
-            count={totalPages}
-            page={page + 1}
-            onChange={(_, p) => setPage(p - 1)}
-            shape="rounded"
-          />
+          <Pagination count={totalPages} page={page + 1} onChange={(_, p) => setPage(p - 1)} shape="rounded" />
         </Stack>
       )}
     </Stack>

@@ -1,0 +1,874 @@
+{
+  "app": {
+    "brand": "Travel Agency"
+  },
+  "nav": {
+    "home": "Home",
+    "tours": "Tours",
+    "orders": "Orders",
+    "profile": "Profile",
+    "admin": "Admin"
+  },
+  "menu": {
+    "account": "Account",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "users": "Users",
+    "orders": "Orders",
+    "payments": "Payments",
+    "accessDenied": "Access denied. Admin panel is available only for ADMIN/MANAGER."
+  },
+  "pages": {
+    "tours": {
+      "title": "Tours",
+      "actions": {
+        "addTour": "+ Add tour",
+        "makeHot": "Make HOT",
+        "unmakeHot": "Unmake HOT"
+      },
+      "search": {
+        "label": "Search",
+        "placeholder": "title/description…"
+      },
+      "sort": {
+        "label": "Sort",
+        "hotFirst": "Hot first",
+        "priceAsc": "Price: low → high",
+        "priceDesc": "Price: high → low",
+        "checkInAsc": "Check-in: early → late",
+        "checkInDesc": "Check-in: late → early",
+        "titleAsc": "Title: A → Z",
+        "titleDesc": "Title: Z → A"
+      },
+      "pagination": {
+        "perPage": "Per page",
+        "pageOf": "Page {{page}} / {{total}}"
+      },
+      "filters": {
+        "toggle": "Filters",
+        "reset": "Reset",
+        "country": "Country",
+        "city": "City",
+        "minPrice": "Min price",
+        "maxPrice": "Max price",
+        "minCapacity": "Min capacity",
+        "maxCapacity": "Max capacity",
+        "tourTypes": "Tour types",
+        "transferTypes": "Transfer types",
+        "hotelTypes": "Hotel types",
+        "hotOnly": "Hot only",
+        "activeOnly": "Active only",
+        "tip": "Tip: leave a switch off to not filter by that field.",
+        "chips": {
+          "q": "q: {{value}}",
+          "types": "types: {{value}}",
+          "transferTypes": "transfer: {{value}}",
+          "hotelTypes": "hotel: {{value}}",
+          "minPrice": "minPrice: {{value}}",
+          "maxPrice": "maxPrice: {{value}}",
+          "country": "country: {{value}}",
+          "city": "city: {{value}}",
+          "hot": "hot: {{value}}",
+          "active": "active: {{value}}",
+          "minCapacity": "minCap: {{value}}",
+          "maxCapacity": "maxCap: {{value}}"
+        }
+      },
+      "results": {
+        "found": "Found: {{count}}"
+      },
+      "loadingList": "Loading tours…",
+      "empty": "No tours found.",
+      "badges": {
+        "hot": "HOT",
+        "inactive": "Inactive"
+      },
+      "confirm": {
+        "delete": "Delete this tour?",
+        "toggleHot": "{{action}} for \"{{title}}\"?"
+      },
+      "alerts": {
+        "favoriteStub": "(Stub) Added to favorites: {{title}}"
+      },
+      "errors": {
+        "loadFailed": "Failed to load tours",
+        "deleteFailed": "Failed to delete tour",
+        "updateHotFailed": "Failed to update HOT"
+      }
+    }, 
+    "tourDetails": {
+      "loading": "Loading tour...",
+      "back": "← Back to tours",
+      "fields": {
+        "price": "Price",
+        "countryCity": "Country/City",
+        "capacity": "Capacity",
+        "hot": "Hot",
+        "active": "Active",
+        "checkIn": "Check-in",
+        "checkOut": "Check-out"
+      },
+      "order": {
+        "open": "Place order",
+        "inactiveWarning": "This tour is inactive, ordering is not available.",
+        "errors": {
+          "createFailed": "Failed to create order"
+        },
+        "dialog": {
+          "title": "Order checkout",
+          "youOrder": "You are ordering tour:",
+          "amount": "Amount:",
+          "agree": "I agree with the terms and confirm the order.",
+          "confirm": "Confirm"
+        }
+      },
+      "reviews": {
+        "title": "Reviews",
+        "loading": "Loading reviews...",
+        "empty": "No reviews for this tour yet.",
+        "noText": "(no text)",
+        "errors": {
+          "loadFailed": "Failed to load reviews"
+        }
+      },
+      "confirm": {
+        "delete": "Delete this tour?"
+      },
+      "alerts": {
+        "favoriteStub": "(Stub) Added to favorites: {{title}}"
+      },
+      "errors": {
+        "missingId": "Tour id is missing",
+        "loadFailed": "Failed to load tour",
+        "deleteFailed": "Failed to delete tour"
+      }
+    }, 
+    "tourEdit": {
+  "title": {
+    "edit": "Edit tour",
+    "create": "Create tour"
+  },
+  "sections": {
+    "mainInfo": "Main info"
+  },
+  "actions": {
+    "back": "Back"
+  },
+  "fields": {
+    "title": "Title",
+    "shortDescription": "Short description",
+    "longDescription": "Long description",
+    "price": "Price",
+    "capacity": "Capacity",
+    "country": "Country",
+    "city": "City",
+    "tourType": "Tour type",
+    "transferType": "Transfer type",
+    "hotelType": "Hotel type",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "active": "Active",
+    "hot": "Hot"
+  },
+  "validation": {
+    "titleRequired": "Title is required",
+    "shortRequired": "Short description is required",
+    "longRequired": "Long description is required",
+    "countryRequired": "Country is required",
+    "cityRequired": "City is required",
+    "pricePositive": "Price must be > 0",
+    "capacityPositive": "Capacity must be > 0",
+    "checkInRequired": "Check-in is required",
+    "checkOutRequired": "Check-out is required",
+    "checkOutAfter": "Check-out must be after check-in"
+  },
+  "errors": {
+    "loadFailed": "Failed to load tour",
+    "saveFailed": "Failed to save tour"
+  } 
+  
+},
+"profile": {
+  "title": "Profile",
+  "actions": {
+    "edit": "Edit profile"
+  },
+  "fields": {
+    "id": "ID",
+    "name": "Name",
+    "surname": "Surname",
+    "email": "Email",
+    "phone": "Phone",
+    "password": "Password",
+    "active": "Active",
+    "balance": "Balance",
+    "role": "Role",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at"
+  },
+  "dialog": {
+    "title": "Edit profile",
+    "fields": {
+      "name": "Name",
+      "surname": "Surname",
+      "email": "Email",
+      "phone": "Phone number",
+      "balance": "Balance",
+      "password": "Password"
+    },
+    "hints": {
+      "phoneFormat": "Format: +380XXXXXXXXX (10-15 digits)",
+      "balanceKeep": "Leave empty to keep current balance",
+      "passwordKeep": "Leave empty to keep current password"
+    },
+    "actions": {
+      "saving": "Saving..."
+    }
+  },
+  "validation": {
+    "nameMax": "Name must be at most 100 characters long",
+    "surnameMax": "Surname must be at most 100 characters long",
+    "emailMax": "Email must be at most 255 characters long",
+    "emailInvalid": "Email format is invalid",
+    "phoneMax": "Phone number must be at most 25 characters long",
+    "phoneInvalid": "Phone number must contain 10-15 digits and may start with +",
+    "passwordLength": "Password must be 8-72 characters long",
+    "passwordComplexity": "Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 digit",
+    "balanceInvalid": "Balance must be a valid number",
+    "balanceNegative": "Balance cannot be negative",
+    "balanceTooLarge": "Balance is too large"
+  },
+  "errors": {
+    "loadFailed": "Failed to load profile",
+    "updateFailed": "Failed to update profile",
+    "notFound": "Profile not found"
+  }
+},
+"orders": {
+  "title": "Orders",
+  "empty": "No orders yet.",
+  "card": {
+    "orderNumber": "Order #{{orderNumber}}",
+    "orderId": "Order ID",
+    "totalAmount": "Total amount",
+    "tourId": "Tour ID"
+  },
+  "errors": {
+    "noToken": "No access token. Please log in again.",
+    "noUserId": "Cannot extract userId from access token. Check claim userId/id in JWT.",
+    "loadFailed": "Failed to load orders"
+  }
+},
+"orderDetails": {
+  "title": "Order details",
+  "actions": {
+    "back": "Back"
+  },
+  "header": {
+    "orderNumber": "Order #{{orderNumber}}"
+  },
+  "fields": {
+    "totalAmount": "Total amount"
+  },
+  "tour": {
+    "title": "Tour",
+    "hint": "Click to open tour page",
+    "openBtn": "Open tour"
+  },
+  "payment": {
+    "title": "Payment",
+    "registeredInfo": "Order is registered and not paid yet.",
+    "payBtn": "Pay",
+    "paidButMissing": "Status is PAID, but payment is missing. Check backend/data.",
+    "cancelledNoPayment": "Order is cancelled. No payment was made.",
+    "cardTitlePaid": "Payment (click to open)",
+    "cardTitleInfo": "Payment info (click to open)",
+    "unknownStatus": "Unknown status: {{status}}",
+    "fields": {
+      "status": "Status",
+      "method": "Method",
+      "amount": "Amount",
+      "paidAt": "Paid at",
+      "failureReason": "Failure reason"
+    }
+  },
+  "review": {
+    "title": "Review",
+    "noneInfo": "No review yet.",
+    "addBtn": "Add review",
+    "editBtn": "Edit",
+    "fields": {
+      "rating": "Rating",
+      "comment": "Comment",
+      "updated": "Updated"
+    },
+    "errors": {
+      "ratingRange": "Rating must be from 1 to 5.",
+      "commentMax": "Comment must be at most 2000 characters.",
+      "saveFailed": "Failed to save review"
+    },
+    "dialog": {
+      "createTitle": "Add review",
+      "editTitle": "Edit review",
+      "fields": {
+        "ratingHint": "Rating (1..5)",
+        "comment": "Comment"
+      },
+      "hints": {
+        "commentCounter": "{{count}}/2000"
+      },
+      "actions": {
+        "saving": "Saving..."
+      }
+    }
+  },
+  "pay": {
+    "dialog": {
+      "title": "Pay for order",
+      "fields": {
+        "method": "Payment method",
+        "amount": "Amount"
+      },
+      "hints": {
+        "amountFormat": "Format: 0.01 .. 1000000000.00"
+      },
+      "actions": {
+        "pay": "Pay",
+        "processing": "Processing..."
+      }
+    },
+    "errors": {
+      "amountInvalid": "Enter a valid amount (> 0).",
+      "createFailed": "Failed to create payment"
+    }
+  },
+  "errors": {
+    "missingOrderId": "orderId is missing in URL",
+    "missingTourId": "tourId is missing in order (cannot open tour page).",
+    "loadFailed": "Failed to load order",
+    "notFound": "Order not found."
+  }
+},
+"paymentDetails": {
+  "title": "Payment",
+  "actions": {
+    "back": "Back"
+  },
+  "card": {
+    "title": "Payment info"
+  },
+  "fields": {
+    "paymentId": "Payment ID",
+    "orderId": "Order ID",
+    "status": "Status",
+    "method": "Method",
+    "amount": "Amount",
+    "paidAt": "Paid at",
+    "failureReason": "Failure reason",
+    "createdAt": "Created at",
+    "updatedAt": "Updated at"
+  },
+  "errors": {
+    "missingOrderId": "orderId is missing in URL",
+    "loadFailed": "Failed to load payment"
+  }
+},
+"home": {
+  "title": "Welcome!",
+  "greeting": "Hello{{email, string}}",
+  "subtitle": "Browse tours, create orders, pay online, and leave reviews — all in one place.",
+  "actions": {
+    "browseTours": "Browse tours",
+    "myOrders": "My orders",
+    "profile": "Profile"
+  },
+  "about": {
+    "title": "About our travel agency",
+    "text": "We help you plan trips and pick the best options for your budget and preferences.",
+    "points": {
+      "search": "Search and filter tours by country, city, type, and dates",
+      "order": "Create an order in a few clicks",
+      "pay": "Pay online and track payment status",
+      "review": "Leave reviews after your trip"
+    }
+  },
+  "tips": {
+    "title": "Quick tips",
+    "subtitle": "Start here:",
+    "items": {
+      "tours": {
+        "title": "Tours",
+        "text": "Explore available tours and open details."
+      },
+      "orders": {
+        "title": "Orders",
+        "text": "View your orders and manage payments/reviews."
+      },
+      "profile": {
+        "title": "Profile",
+        "text": "Update your personal data and view your role/balance."
+      }
+    }
+  }
+},
+"adminPage": {
+  "title": "Admin Panel",
+  "hint": "Choose a section to manage data.",
+  "tabs": {
+    "users": "Users",
+    "orders": "Orders",
+    "payments": "Payments"
+  }
+},
+"adminUsers": {
+  "title": "Users",
+  "meta": {
+    "found": "Found: {{total}}",
+    "page": "Page {{page}} / {{totalPages}}"
+  },
+  "search": {
+    "label": "Search",
+    "placeholder": "email / name / phone…"
+  },
+  "sort": {
+    "label": "Sort",
+    "createdDesc": "Created: newest",
+    "createdAsc": "Created: oldest",
+    "emailAsc": "Email: A → Z",
+    "emailDesc": "Email: Z → A",
+    "balanceAsc": "Balance: low → high",
+    "balanceDesc": "Balance: high → low"
+  },
+  "size": {
+    "label": "Per page"
+  },
+  "actions": {
+    "filters": "Filters",
+    "reset": "Reset",
+    "changeRole": "Change role",
+    "block": "Block",
+    "unblock": "Unblock",
+    "delete": "Delete"
+  },
+  "filters": {
+    "roles": "Roles",
+    "minBalance": "Min balance",
+    "maxBalance": "Max balance",
+    "createdFrom": "Created from (ISO)",
+    "createdTo": "Created to (ISO)",
+    "createdIsoPlaceholder": "2026-02-01T00:00:00",
+    "activeOnly": "Active only",
+    "inactiveOnly": "Inactive only",
+    "tip": "Tip: leave both off to not filter by active."
+  },
+  "chips": {
+    "q": "q",
+    "roles": "roles",
+    "active": "active",
+    "minBalance": "minBalance",
+    "maxBalance": "maxBalance",
+    "createdFrom": "createdFrom",
+    "createdTo": "createdTo"
+  },
+  "labels": {
+    "balance": "Balance",
+    "id": "ID"
+  },
+  "hint": {
+    "openDetails": "Click card to open user details"
+  },
+  "empty": "No users found.",
+  "roleDialog": {
+    "title": "Change role",
+    "user": "User",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "confirms": {
+    "delete": "Delete user {{email}}? This action is irreversible.",
+    "block": "Block user {{email}}?",
+    "unblock": "Unblock user {{email}}?"
+  },
+  "errors": {
+    "loadFailed": "Failed to load users",
+    "updateRoleFailed": "Failed to update role",
+    "updateStatusFailed": "Failed to update user status",
+    "deleteFailed": "Failed to delete user"
+  }
+},
+ "adminUserDetails": {
+      "titleFallback": "User",
+      "titleWithName": "User: {{name}}",
+      "titleWithId": "User {{id}}",
+
+      "errors": {
+        "loadUser": "Failed to load user details",
+        "loadOrders": "Failed to load user orders",
+        "loadReviews": "Failed to load user reviews",
+        "loadPayments": "Failed to load user payments"
+      },
+
+      "states": {
+        "notFound": "User not found"
+      },
+
+      "sections": {
+        "user": "User",
+        "orders": "Orders",
+        "payments": "Payments",
+        "reviews": "Reviews"
+      },
+
+      "loading": {
+        "page": "Loading…",
+        "orders": "Loading orders…",
+        "payments": "Loading payments…",
+        "reviews": "Loading reviews…"
+      },
+
+      "chips": {
+        "count": "Count: {{count}}",
+        "role": "Role: {{role}}",
+        "active": "Active: {{value}}"
+      },
+
+      "fields": {
+        "userId": "User ID",
+        "email": "Email",
+        "name": "Name",
+        "phone": "Phone",
+        "balance": "Balance",
+        "created": "Created",
+        "updated": "Updated"
+      },
+
+      "orders": {
+        "empty": "No orders for this user",
+        "openOrder": "Open order",
+        "meta": "Status: {{status}} • Total: {{total}} • Created: {{created}}"
+      },
+
+      "payments": {
+        "empty": "No payments for this user",
+        "paymentTitle": "Payment {{id}}",
+        "meta": "Status: {{status}} • Method: {{method}} • Amount: {{amount}} • Paid: {{paid}}",
+        "failure": "Failure: {{reason}}",
+        "openRelatedOrder": "Open related order"
+      },
+
+      "reviews": {
+        "empty": "No reviews for this user",
+        "reviewTitle": "Review {{id}}",
+        "rating": "Rating: {{value}}/5",
+        "noText": "(no text)",
+        "openRelatedOrder": "Open related order"
+      }
+    },
+     "adminOrders": {
+      "title": "Orders",
+      "subtitle": "Found: {{total}} • Page {{page}} / {{pages}}",
+      "search": {
+        "label": "Search in page",
+        "placeholder": "order/user/payment/review…"
+      },
+      "toolbar": {
+        "sort": "Sort",
+        "perPage": "Per page",
+        "filters": "Filters",
+        "reset": "Reset"
+      },
+      "sortOptions": {
+        "CREATED_DESC": "Created: newest",
+        "CREATED_ASC": "Created: oldest",
+        "TOTAL_ASC": "Total: low → high",
+        "TOTAL_DESC": "Total: high → low",
+        "STATUS_ASC": "Status: A → Z",
+        "STATUS_DESC": "Status: Z → A",
+        "ORDERNO_ASC": "Order #: A → Z",
+        "ORDERNO_DESC": "Order #: Z → A"
+      },
+      "filters": {
+        "statuses": "Statuses",
+        "minTotal": "Min total amount",
+        "maxTotal": "Max total amount",
+        "createdFrom": "Created from (ISO)",
+        "createdTo": "Created to (ISO)",
+        "createdFromPh": "2026-02-01T00:00:00",
+        "createdToPh": "2026-02-10T23:59:59",
+        "hasPayment": "Has payment",
+        "hasReview": "Has review",
+        "tip": "Tip: switch off = do not filter by that field."
+      },
+      "chips": {
+        "statuses": "statuses: {{value}}",
+        "minTotal": "minTotal: {{value}}",
+        "maxTotal": "maxTotal: {{value}}",
+        "createdFrom": "from: {{value}}",
+        "createdTo": "to: {{value}}",
+        "hasPayment": "hasPayment: {{value}}",
+        "hasReview": "hasReview: {{value}}"
+      },
+      "meta": {
+        "showingOnPage": "Showing on this page: {{count}}",
+        "pageOf": "Page {{page}} / {{pages}}"
+      },
+      "states": {
+        "empty": "No orders found.",
+        "loading": "Loading…"
+      },
+      "errors": {
+        "load": "Failed to load admin orders",
+        "cancel": "Failed to cancel order",
+        "delete": "Failed to delete order"
+      },
+      "confirm": {
+        "cancel": "Cancel this order?",
+        "delete": "Delete this order permanently?"
+      },
+      "card": {
+        "user": "User: {{value}}",
+        "createdUpdated": "Created: {{created}} • Updated: {{updated}}",
+        "tourId": "Tour ID: {{value}}",
+        "paidAt": "Paid at: {{value}}",
+        "review": "Review: {{value}}",
+        "orderChip": "Order: {{value}}",
+        "totalChip": "Total: {{value}}",
+        "paymentChipNone": "Payment: —",
+        "paymentChip": "Payment: {{status}}{{method}}",
+        "reviewChipNone": "Review: —",
+        "reviewChip": "Review: {{rating}}/5"
+      },
+      "actions": {
+        "openTour": "Open tour",
+        "cancel": "Cancel",
+        "delete": "Delete"
+      }
+    },
+    "adminOrderDetails": {
+      "titleFallback": "Order",
+      "title": "Order {{number}}",
+      "actions": {
+        "back": "Back",
+        "backToOrders": "Back to orders",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "openUser": "Open user",
+        "openTour": "Open tour"
+      },
+      "confirm": {
+        "cancel": "Cancel this order?",
+        "delete": "Delete this order permanently?"
+      },
+      "states": {
+        "notFound": "Order not found",
+        "loading": "Loading…"
+      },
+      "errors": {
+        "load": "Failed to load order details",
+        "cancel": "Failed to cancel order",
+        "delete": "Failed to delete order"
+      },
+      "sections": {
+        "order": "Order",
+        "user": "User",
+        "tour": "Tour",
+        "payment": "Payment",
+        "review": "Review"
+      },
+      "chips": {
+        "status": "Status: {{value}}",
+        "total": "Total: {{value}}"
+      },
+      "fields": {
+        "orderId": "Order ID",
+        "orderNumber": "Order number",
+        "created": "Created",
+        "updated": "Updated",
+
+        "userId": "User ID",
+        "email": "Email",
+        "name": "Name",
+        "phone": "Phone",
+        "balance": "Balance",
+        "role": "Role",
+        "active": "Active",
+
+        "tourId": "Tour ID",
+        "tourHint": "(Tour details are shown on the tour page)",
+
+        "paymentId": "Payment ID",
+        "method": "Method",
+        "amount": "Amount",
+        "paidAt": "Paid at",
+        "failureReason": "Failure reason",
+
+        "reviewId": "Review ID",
+        "rating": "Rating",
+        "comment": "Comment"
+      },
+      "info": {
+        "noPayment": "No payment for this order",
+        "noReview": "No review for this order"
+      }
+    },
+     "adminPayments": {
+      "title": "Payments",
+      "meta": {
+        "found": "Found: {{count}}",
+        "pageOf": "Page {{page}} / {{total}}",
+        "loading": "Loading…"
+      },
+      "search": {
+        "label": "Search in page",
+        "placeholder": "status/method/orderId/failure…"
+      },
+      "toolbar": {
+        "sort": "Sort",
+        "perPage": "Per page",
+        "filters": "Filters",
+        "reset": "Reset"
+      },
+      "sort": {
+        "paidDesc": "PaidAt: newest",
+        "paidAsc": "PaidAt: oldest",
+        "amountDesc": "Amount: high → low",
+        "amountAsc": "Amount: low → high",
+        "statusAsc": "Status: A → Z",
+        "statusDesc": "Status: Z → A",
+        "methodAsc": "Method: A → Z",
+        "methodDesc": "Method: Z → A"
+      },
+      "filters": {
+        "statuses": "Statuses",
+        "methods": "Methods",
+        "minAmount": "Min amount",
+        "maxAmount": "Max amount",
+        "paidFrom": "Paid from (ISO)",
+        "paidTo": "Paid to (ISO)",
+        "paidFromPlaceholder": "2026-02-01T00:00:00",
+        "paidToPlaceholder": "2026-02-10T23:59:59",
+        "hasFailureReason": "Has failure reason"
+      },
+      "chips": {
+        "statuses": "statuses: {{value}}",
+        "methods": "methods: {{value}}",
+        "min": "min: {{value}}",
+        "max": "max: {{value}}",
+        "paidFrom": "paidFrom: {{value}}",
+        "paidTo": "paidTo: {{value}}",
+        "hasFailureReason": "hasFailureReason: {{value}}"
+      },
+      "list": {
+        "empty": "No payments found.",
+        "paymentTitle": "Payment {{id}}",
+        "orderId": "Order ID: {{id}}",
+        "failureReason": "Failure reason: {{value}}",
+        "openOrder": "Open order"
+      },
+      "badges": {
+        "status": "Status: {{value}}",
+        "method": "Method: {{value}}",
+        "amount": "Amount: {{value}}",
+        "paidAt": "Paid at: {{value}}"
+      },
+      "errors": {
+        "load": "Failed to load payments"
+      }
+    },
+     "register": {
+      "title": "Register",
+      "fields": {
+        "name": "Name",
+        "surname": "Surname",
+        "email": "Email",
+        "phoneNumber": "Phone number",
+        "password": "Password"
+      },
+      "placeholders": {
+        "phone": "+380xxxxxxxxx"
+      },
+      "buttons": {
+        "create": "Create account",
+        "creating": "Creating…",
+        "toLogin": "Already have an account? Login"
+      },
+      "success": {
+        "registered": "Registered successfully. You can login now."
+      },
+      "errors": {
+        "registrationFailed": "Registration failed"
+      },
+      "validation": {
+        "nameMin": "Name must be at least 2 characters",
+        "surnameMin": "Surname must be at least 2 characters",
+        "emailInvalid": "Email is invalid",
+        "phoneInvalid": "Phone number must contain 10-15 digits and may start with +",
+        "passwordMin": "Password must be at least 8 characters",
+        "passwordUpper": "Password must contain at least 1 uppercase letter",
+        "passwordLower": "Password must contain at least 1 lowercase letter",
+        "passwordDigit": "Password must contain at least 1 digit"
+      }
+    },
+    "login": {
+      "title": "Login",
+      "fields": {
+        "email": "Email",
+        "password": "Password"
+      },
+      "buttons": {
+        "signIn": "Sign in",
+        "createAccount": "Create account"
+      },
+      "errors": {
+        "loginFailed": "Login failed"
+      }
+    }
+
+  
+
+
+
+  },
+  
+  "enums": {
+    "tourType": {
+      "REST": "Rest",
+      "EXCURSION": "Excursion",
+      "SHOPPING": "Shopping"
+    },
+    "transferType": {
+      "CAR": "Car",
+      "PLANE": "Plane",
+      "SHIP": "Ship"
+    },
+    "hotelType": {
+      "THREE": "3★",
+      "FOUR": "4★",
+      "FIVE": "5★"
+    },
+     "paymentStatus": {
+      "NEW": "New",
+      "SUCCESS": "Success",
+      "FAILED": "Failed",
+      "PENDING": "Pending",
+      "CANCELED": "Canceled",
+      "REFUNDED": "Refunded"
+    },
+    "paymentMethod": {
+      "CARD": "Card",
+      "CASH": "Cash",
+      "TRANSFER": "Transfer"
+    }
+  }
+}

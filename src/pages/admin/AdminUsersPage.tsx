@@ -1,4 +1,3 @@
-// src/pages/admin/AdminUsersPage.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
@@ -34,6 +33,7 @@ import * as usersApi from "../../api/users.api";
 import type { UserResponseDto } from "../../api/users.api";
 import { http } from "../../api/http";
 import { useAuth } from "../../auth/AuthContext";
+import { useTranslation } from "react-i18next";
 
 type ApiSuccessResponse<T> = {
   status: string;
@@ -47,8 +47,6 @@ type UserAccessUpdateDto = {
 };
 
 const ROLE_OPTIONS = ["USER", "MANAGER", "ADMIN"] as const;
-
-// ✅ для фільтра roles
 const USER_ROLES = ["USER", "MANAGER", "ADMIN"] as const;
 
 function useDebouncedValue<T>(value: T, delayMs: number) {
@@ -80,13 +78,17 @@ function displayName(u: UserResponseDto) {
 function pickRoles(u: UserResponseDto): string[] {
   const roles: string[] = [];
   if (u.role) roles.push(String(u.role));
-  if (Array.isArray(u.roles)) roles.push(...u.roles.filter(Boolean));
+  // @ts-ignore - in case backend returns roles array too
+  if (Array.isArray((u as any).roles)) roles.push(...((u as any).roles as any[]).filter(Boolean));
   return Array.from(new Set(roles));
 }
 
 function getActive(u: UserResponseDto): boolean | null {
-  if (typeof u.active === "boolean") return u.active;
-  if (typeof u.enabled === "boolean") return u.enabled;
+  // support multiple backends
+  // @ts-ignore
+  if (typeof (u as any).active === "boolean") return (u as any).active;
+  // @ts-ignore
+  if (typeof (u as any).enabled === "boolean") return (u as any).enabled;
   return null;
 }
 
@@ -150,10 +152,12 @@ function isNonEmpty(v?: string | null) {
 }
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation();
+
   const navigate = useNavigate();
   const auth = useAuth();
 
-  // ✅ if current user is MANAGER -> hide dangerous actions
+  // if current user is MANAGER -> hide dangerous actions
   const isManager = useMemo(() => hasRole(auth.roles ?? [], "MANAGER"), [auth.roles]);
 
   // ===== server-side query state =====
@@ -168,7 +172,7 @@ export default function AdminUsersPage() {
   const [minBalance, setMinBalance] = useState("");
   const [maxBalance, setMaxBalance] = useState("");
 
-  // LocalDateTime ISO strings expected by backend; робимо прості text inputs
+  // ISO strings expected by backend (simple text inputs)
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
 
@@ -197,9 +201,7 @@ export default function AdminUsersPage() {
     const f: usersApi.UserFilter = {};
 
     if (isNonEmpty(qDebounced)) f.q = qDebounced.trim();
-
     if (roles.length) f.roles = roles;
-
     if (typeof active === "boolean") f.active = active;
 
     if (isNonEmpty(minBalance)) f.minBalance = minBalance.trim();
@@ -235,7 +237,8 @@ export default function AdminUsersPage() {
       const msg =
         err?.response?.data?.statusMessage ??
         err?.response?.data?.message ??
-        "Failed to load users";
+        t("pages.adminUsers.errors.loadFailed");
+
       setError(msg);
       setUsers([]);
       setTotalPages(1);
@@ -260,28 +263,56 @@ export default function AdminUsersPage() {
     const chips: { key: string; label: string; onDelete: () => void }[] = [];
 
     if (isNonEmpty(qDebounced))
-      chips.push({ key: "q", label: `q: ${qDebounced.trim()}`, onDelete: () => setQ("") });
+      chips.push({
+        key: "q",
+        label: `${t("pages.adminUsers.chips.q")}: ${qDebounced.trim()}`,
+        onDelete: () => setQ(""),
+      });
 
     if (roles.length)
-      chips.push({ key: "roles", label: `roles: ${roles.join(", ")}`, onDelete: () => setRoles([]) });
+      chips.push({
+        key: "roles",
+        label: `${t("pages.adminUsers.chips.roles")}: ${roles.join(", ")}`,
+        onDelete: () => setRoles([]),
+      });
 
     if (typeof active === "boolean")
-      chips.push({ key: "active", label: `active: ${active}`, onDelete: () => setActive(null) });
+      chips.push({
+        key: "active",
+        label: `${t("pages.adminUsers.chips.active")}: ${String(active)}`,
+        onDelete: () => setActive(null),
+      });
 
     if (isNonEmpty(minBalance))
-      chips.push({ key: "minBalance", label: `minBalance: ${minBalance}`, onDelete: () => setMinBalance("") });
+      chips.push({
+        key: "minBalance",
+        label: `${t("pages.adminUsers.chips.minBalance")}: ${minBalance}`,
+        onDelete: () => setMinBalance(""),
+      });
 
     if (isNonEmpty(maxBalance))
-      chips.push({ key: "maxBalance", label: `maxBalance: ${maxBalance}`, onDelete: () => setMaxBalance("") });
+      chips.push({
+        key: "maxBalance",
+        label: `${t("pages.adminUsers.chips.maxBalance")}: ${maxBalance}`,
+        onDelete: () => setMaxBalance(""),
+      });
 
     if (isNonEmpty(createdFrom))
-      chips.push({ key: "createdFrom", label: `createdFrom: ${createdFrom}`, onDelete: () => setCreatedFrom("") });
+      chips.push({
+        key: "createdFrom",
+        label: `${t("pages.adminUsers.chips.createdFrom")}: ${createdFrom}`,
+        onDelete: () => setCreatedFrom(""),
+      });
 
     if (isNonEmpty(createdTo))
-      chips.push({ key: "createdTo", label: `createdTo: ${createdTo}`, onDelete: () => setCreatedTo("") });
+      chips.push({
+        key: "createdTo",
+        label: `${t("pages.adminUsers.chips.createdTo")}: ${createdTo}`,
+        onDelete: () => setCreatedTo(""),
+      });
 
     return chips;
-  }, [qDebounced, roles, active, minBalance, maxBalance, createdFrom, createdTo]);
+  }, [qDebounced, roles, active, minBalance, maxBalance, createdFrom, createdTo, t]);
 
   const clearAllFilters = () => {
     setQ("");
@@ -315,10 +346,10 @@ export default function AdminUsersPage() {
     setError(null);
     try {
       await patchUserAdmin(roleTarget.id, { role: roleValue });
-      await load(); // server-side list -> reload
+      await load();
       closeRoleDialog();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to update role";
+      const msg = err?.response?.data?.message ?? t("pages.adminUsers.errors.updateRoleFailed");
       setError(msg);
     } finally {
       setBusyId(null);
@@ -327,7 +358,11 @@ export default function AdminUsersPage() {
 
   const handleDelete = async (e: React.MouseEvent, u: UserResponseDto) => {
     e.stopPropagation();
-    if (!confirm(`Delete user ${u.email}? This action is irreversible.`)) return;
+
+    const ok = confirm(
+      t("pages.adminUsers.confirms.delete", { email: u.email })
+    );
+    if (!ok) return;
 
     setBusyId(u.id);
     setError(null);
@@ -335,7 +370,7 @@ export default function AdminUsersPage() {
       await deleteUserAdmin(u.id);
       await load();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to delete user";
+      const msg = err?.response?.data?.message ?? t("pages.adminUsers.errors.deleteFailed");
       setError(msg);
     } finally {
       setBusyId(null);
@@ -348,8 +383,11 @@ export default function AdminUsersPage() {
     const cur = getActive(u);
     const nextActive = cur === false ? true : false;
 
-    const label = nextActive ? "Unblock" : "Block";
-    if (!confirm(`${label} user ${u.email}?`)) return;
+    const actionKey = nextActive ? "unblock" : "block";
+    const ok = confirm(
+      t(`pages.adminUsers.confirms.${actionKey}`, { email: u.email })
+    );
+    if (!ok) return;
 
     setBusyId(u.id);
     setError(null);
@@ -357,7 +395,7 @@ export default function AdminUsersPage() {
       await patchUserAdmin(u.id, { active: nextActive });
       await load();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to update user status";
+      const msg = err?.response?.data?.message ?? t("pages.adminUsers.errors.updateStatusFailed");
       setError(msg);
     } finally {
       setBusyId(null);
@@ -381,18 +419,19 @@ export default function AdminUsersPage() {
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
-            Users
+            {t("pages.adminUsers.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Found: {totalElements} • Page {page + 1} / {totalPages}
+            {t("pages.adminUsers.meta.found", { total: totalElements })} •{" "}
+            {t("pages.adminUsers.meta.page", { page: page + 1, totalPages })}
           </Typography>
         </Box>
 
         <TextField
           fullWidth
           size="small"
-          label="Search"
-          placeholder="email / name / phone…"
+          label={t("pages.adminUsers.search.label")}
+          placeholder={t("pages.adminUsers.search.placeholder")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -403,27 +442,27 @@ export default function AdminUsersPage() {
         <Stack spacing={1.6}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
             <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel id="sort-label">Sort</InputLabel>
+              <InputLabel id="sort-label">{t("pages.adminUsers.sort.label")}</InputLabel>
               <Select
                 labelId="sort-label"
-                label="Sort"
+                label={t("pages.adminUsers.sort.label")}
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
               >
-                <MenuItem value="CREATED_DESC">Created: newest</MenuItem>
-                <MenuItem value="CREATED_ASC">Created: oldest</MenuItem>
-                <MenuItem value="EMAIL_ASC">Email: A → Z</MenuItem>
-                <MenuItem value="EMAIL_DESC">Email: Z → A</MenuItem>
-                <MenuItem value="BALANCE_ASC">Balance: low → high</MenuItem>
-                <MenuItem value="BALANCE_DESC">Balance: high → low</MenuItem>
+                <MenuItem value="CREATED_DESC">{t("pages.adminUsers.sort.createdDesc")}</MenuItem>
+                <MenuItem value="CREATED_ASC">{t("pages.adminUsers.sort.createdAsc")}</MenuItem>
+                <MenuItem value="EMAIL_ASC">{t("pages.adminUsers.sort.emailAsc")}</MenuItem>
+                <MenuItem value="EMAIL_DESC">{t("pages.adminUsers.sort.emailDesc")}</MenuItem>
+                <MenuItem value="BALANCE_ASC">{t("pages.adminUsers.sort.balanceAsc")}</MenuItem>
+                <MenuItem value="BALANCE_DESC">{t("pages.adminUsers.sort.balanceDesc")}</MenuItem>
               </Select>
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel id="size-label">Per page</InputLabel>
+              <InputLabel id="size-label">{t("pages.adminUsers.size.label")}</InputLabel>
               <Select
                 labelId="size-label"
-                label="Per page"
+                label={t("pages.adminUsers.size.label")}
                 value={String(size)}
                 onChange={(e) => setSize(Number(e.target.value))}
               >
@@ -442,7 +481,7 @@ export default function AdminUsersPage() {
                 onClick={() => setShowFilters((v) => !v)}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Filters
+                {t("pages.adminUsers.actions.filters")}
               </Button>
 
               <Button
@@ -451,7 +490,7 @@ export default function AdminUsersPage() {
                 onClick={clearAllFilters}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Reset
+                {t("pages.adminUsers.actions.reset")}
               </Button>
             </Stack>
           </Stack>
@@ -461,10 +500,10 @@ export default function AdminUsersPage() {
 
             <Stack spacing={1.4}>
               <FormControl size="small" fullWidth>
-                <InputLabel id="roles-label">Roles</InputLabel>
+                <InputLabel id="roles-label">{t("pages.adminUsers.filters.roles")}</InputLabel>
                 <Select
                   labelId="roles-label"
-                  label="Roles"
+                  label={t("pages.adminUsers.filters.roles")}
                   multiple
                   value={roles}
                   onChange={(e) => setRoles(e.target.value as string[])}
@@ -481,14 +520,14 @@ export default function AdminUsersPage() {
                 <TextField
                   value={minBalance}
                   onChange={(e) => setMinBalance(e.target.value)}
-                  label="Min balance"
+                  label={t("pages.adminUsers.filters.minBalance")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={maxBalance}
                   onChange={(e) => setMaxBalance(e.target.value)}
-                  label="Max balance"
+                  label={t("pages.adminUsers.filters.maxBalance")}
                   size="small"
                   fullWidth
                 />
@@ -498,16 +537,16 @@ export default function AdminUsersPage() {
                 <TextField
                   value={createdFrom}
                   onChange={(e) => setCreatedFrom(e.target.value)}
-                  label="Created from (ISO)"
-                  placeholder="2026-02-01T00:00:00"
+                  label={t("pages.adminUsers.filters.createdFrom")}
+                  placeholder={t("pages.adminUsers.filters.createdIsoPlaceholder")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={createdTo}
                   onChange={(e) => setCreatedTo(e.target.value)}
-                  label="Created to (ISO)"
-                  placeholder="2026-02-10T23:59:59"
+                  label={t("pages.adminUsers.filters.createdTo")}
+                  placeholder={t("pages.adminUsers.filters.createdIsoPlaceholder")}
                   size="small"
                   fullWidth
                 />
@@ -518,16 +557,16 @@ export default function AdminUsersPage() {
                   control={
                     <Switch checked={active === true} onChange={(e) => setActive(e.target.checked ? true : null)} />
                   }
-                  label="Active only"
+                  label={t("pages.adminUsers.filters.activeOnly")}
                 />
                 <FormControlLabel
                   control={
                     <Switch checked={active === false} onChange={(e) => setActive(e.target.checked ? false : null)} />
                   }
-                  label="Inactive only"
+                  label={t("pages.adminUsers.filters.inactiveOnly")}
                 />
                 <Typography variant="body2" color="text.secondary" sx={{ ml: { sm: "auto" } }}>
-                  Tip: leave both off to not filter by active.
+                  {t("pages.adminUsers.filters.tip")}
                 </Typography>
               </Stack>
             </Stack>
@@ -548,7 +587,7 @@ export default function AdminUsersPage() {
 
       {/* List */}
       {users.length === 0 ? (
-        <Alert severity="info">No users found.</Alert>
+        <Alert severity="info">{t("pages.adminUsers.empty")}</Alert>
       ) : (
         <Stack spacing={2}>
           {users.map((u) => {
@@ -589,10 +628,14 @@ export default function AdminUsersPage() {
                         <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" alignItems="center">
                           <Chip label={st} color={statusColor(st)} variant="outlined" size="small" />
                           {u.balance != null && (
-                            <Chip label={`Balance: ${formatMoney(u.balance)}`} variant="outlined" size="small" />
+                            <Chip
+                              label={`${t("pages.adminUsers.labels.balance")}: ${formatMoney(u.balance)}`}
+                              variant="outlined"
+                              size="small"
+                            />
                           )}
                           <Typography variant="caption" color="text.secondary">
-                            ID: {u.id}
+                            {t("pages.adminUsers.labels.id")}: {u.id}
                           </Typography>
                         </Stack>
                       </Box>
@@ -609,7 +652,7 @@ export default function AdminUsersPage() {
                             }}
                             sx={{ borderRadius: 2 }}
                           >
-                            Change role
+                            {t("pages.adminUsers.actions.changeRole")}
                           </Button>
 
                           <Button
@@ -619,7 +662,9 @@ export default function AdminUsersPage() {
                             onClick={(e) => handleToggleBlock(e, u)}
                             sx={{ borderRadius: 2 }}
                           >
-                            {activeValue === false ? "Unblock" : "Block"}
+                            {activeValue === false
+                              ? t("pages.adminUsers.actions.unblock")
+                              : t("pages.adminUsers.actions.block")}
                           </Button>
 
                           <Button
@@ -630,7 +675,7 @@ export default function AdminUsersPage() {
                             onClick={(e) => handleDelete(e, u)}
                             sx={{ borderRadius: 2 }}
                           >
-                            Delete
+                            {t("pages.adminUsers.actions.delete")}
                           </Button>
                         </Stack>
                       )}
@@ -645,11 +690,15 @@ export default function AdminUsersPage() {
                       justifyContent="space-between"
                     >
                       <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-                        {rs.length > 0 ? rs.map((r) => <Chip key={r} size="small" label={r} />) : <Chip size="small" label="ROLE: —" variant="outlined" />}
+                        {rs.length > 0 ? (
+                          rs.map((r) => <Chip key={r} size="small" label={r} />)
+                        ) : (
+                          <Chip size="small" label="ROLE: —" variant="outlined" />
+                        )}
                       </Stack>
 
                       <Typography variant="body2" color="text.secondary">
-                        Click card to open user details
+                        {t("pages.adminUsers.hint.openDetails")}
                       </Typography>
                     </Stack>
                   </CardContent>
@@ -670,10 +719,10 @@ export default function AdminUsersPage() {
       {/* Role dialog */}
       {!isManager && (
         <Dialog open={roleDialogOpen} onClose={closeRoleDialog} fullWidth maxWidth="xs">
-          <DialogTitle>Change role</DialogTitle>
+          <DialogTitle>{t("pages.adminUsers.roleDialog.title")}</DialogTitle>
           <DialogContent>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              User: {roleTarget?.email ?? "—"}
+              {t("pages.adminUsers.roleDialog.user")}: {roleTarget?.email ?? "—"}
             </Typography>
 
             <Select fullWidth value={roleValue} onChange={(e) => setRoleValue(String(e.target.value))}>
@@ -686,9 +735,9 @@ export default function AdminUsersPage() {
           </DialogContent>
 
           <DialogActions>
-            <Button onClick={closeRoleDialog}>Cancel</Button>
+            <Button onClick={closeRoleDialog}>{t("pages.adminUsers.roleDialog.cancel")}</Button>
             <Button variant="contained" onClick={saveRole} disabled={!roleTarget || busyId === roleTarget?.id}>
-              Save
+              {t("pages.adminUsers.roleDialog.save")}
             </Button>
           </DialogActions>
         </Dialog>

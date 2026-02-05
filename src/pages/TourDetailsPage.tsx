@@ -29,6 +29,7 @@ import * as ordersApi from "../api/orders.api";
 import * as reviewsApi from "../api/reviews.api";
 import type { TourResponseDto } from "../types/response";
 import type { ReviewResponseDto } from "../api/reviews.api";
+import { useTranslation } from "react-i18next";
 
 /**
  * TODO: заміни на свою реальну роль із AuthContext / JWT payload.
@@ -49,7 +50,15 @@ function formatDate(value?: string) {
   return d.toLocaleString();
 }
 
+function formatMoney(v: any) {
+  if (v === null || v === undefined) return "—";
+  const n = typeof v === "string" ? Number(v) : v;
+  if (Number.isFinite(n)) return n.toFixed(2);
+  return String(v);
+}
+
 export default function TourDetailsPage() {
+  const { t } = useTranslation();
   const { tourId } = useParams();
   const navigate = useNavigate();
 
@@ -70,10 +79,14 @@ export default function TourDetailsPage() {
 
   const isAdmin = useIsAdmin();
 
+  const trTourType = (v: any) => t(`enums.tourType.${String(v)}`);
+  const trTransferType = (v: any) => t(`enums.transferType.${String(v)}`);
+  const trHotelType = (v: any) => t(`enums.hotelType.${String(v)}`);
+
   useEffect(() => {
     const run = async () => {
       if (!tourId) {
-        setError("Tour id is missing");
+        setError(t("pages.tourDetails.errors.missingId"));
         setLoading(false);
         return;
       }
@@ -82,10 +95,10 @@ export default function TourDetailsPage() {
       setLoading(true);
 
       try {
-        const t = await toursApi.getTourById(tourId);
-        setTour(t);
+        const tt = await toursApi.getTourById(tourId);
+        setTour(tt);
       } catch (err: any) {
-        const msg = err?.response?.data?.message ?? "Failed to load tour";
+        const msg = err?.response?.data?.message ?? t("pages.tourDetails.errors.loadFailed");
         setError(msg);
       } finally {
         setLoading(false);
@@ -98,7 +111,7 @@ export default function TourDetailsPage() {
         const list = await reviewsApi.getReviewsByTour(tourId);
         setReviews(list ?? []);
       } catch (err: any) {
-        const msg = err?.response?.data?.message ?? "Failed to load reviews";
+        const msg = err?.response?.data?.message ?? t("pages.tourDetails.reviews.errors.loadFailed");
         setReviewsError(msg);
       } finally {
         setReviewsLoading(false);
@@ -106,7 +119,7 @@ export default function TourDetailsPage() {
     };
 
     run();
-  }, [tourId]);
+  }, [tourId, t]);
 
   const canOrder = useMemo(() => {
     return !!tour && tour.active;
@@ -114,7 +127,7 @@ export default function TourDetailsPage() {
 
   const handleFavoriteStub = () => {
     if (!tour) return;
-    alert(`(Stub) Added to favorites: ${tour.title}`);
+    alert(t("pages.tourDetails.alerts.favoriteStub", { title: tour.title }));
   };
 
   const handleEdit = () => {
@@ -124,14 +137,14 @@ export default function TourDetailsPage() {
 
   const handleDelete = async () => {
     if (!tourId) return;
-    const ok = confirm("Delete this tour?");
+    const ok = confirm(t("pages.tourDetails.confirm.delete"));
     if (!ok) return;
 
     try {
       // await toursApi.deleteTour(tourId);
       navigate("/tours");
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to delete tour";
+      const msg = err?.response?.data?.message ?? t("pages.tourDetails.errors.deleteFailed");
       alert(msg);
     }
   };
@@ -152,19 +165,19 @@ export default function TourDetailsPage() {
       const created = await ordersApi.createMyOrder({ tourId: tour.id });
       navigate(`/orders/${created.id}`);
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to create order";
+      const msg = err?.response?.data?.message ?? t("pages.tourDetails.order.errors.createFailed");
       setOrderError(msg);
     } finally {
       setOrderSubmitting(false);
     }
   };
 
-  if (loading) return <Typography variant="h6">Loading tour...</Typography>;
+  if (loading) return <Typography variant="h6">{t("pages.tourDetails.loading")}</Typography>;
 
   return (
     <Stack spacing={2}>
       <Button variant="text" onClick={() => navigate("/tours")} sx={{ width: "fit-content" }}>
-        ← Back to tours
+        {t("pages.tourDetails.back")}
       </Button>
 
       {error && <Alert severity="error">{error}</Alert>}
@@ -191,10 +204,17 @@ export default function TourDetailsPage() {
                 }}
               />
 
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ position: "absolute", top: 14, left: 14, right: 14 }}>
-                {tour.hot && <Chip label="HOT" color="error" size="small" />}
-                {!tour.active && <Chip label="Inactive" size="small" />}
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ position: "absolute", top: 14, left: 14, right: 14 }}
+              >
+                {tour.hot && <Chip label={t("pages.tours.badges.hot")} color="error" size="small" />}
+                {!tour.active && <Chip label={t("pages.tours.badges.inactive")} size="small" />}
+
                 <Box sx={{ flexGrow: 1 }} />
+
                 <IconButton
                   onClick={handleFavoriteStub}
                   sx={{ bgcolor: "rgba(255,255,255,0.92)", "&:hover": { bgcolor: "rgba(255,255,255,1)" } }}
@@ -225,7 +245,8 @@ export default function TourDetailsPage() {
                   {tour.title}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.9)" }}>
-                  {tour.country}, {tour.city} • {tour.tourType} • {tour.transferType} • {tour.hotelType}
+                  {tour.country}, {tour.city} • {trTourType(tour.tourType)} • {trTransferType(tour.transferType)} •{" "}
+                  {trHotelType(tour.hotelType)}
                 </Typography>
               </Box>
             </Box>
@@ -238,32 +259,34 @@ export default function TourDetailsPage() {
 
                 <Stack spacing={0.7}>
                   <Typography variant="body2">
-                    <b>Price:</b> {tour.price}
+                    <b>{t("pages.tourDetails.fields.price")}:</b> {formatMoney(tour.price)}
                   </Typography>
                   <Typography variant="body2">
-                    <b>Country/City:</b> {tour.country}, {tour.city}
+                    <b>{t("pages.tourDetails.fields.countryCity")}:</b> {tour.country}, {tour.city}
                   </Typography>
                   <Typography variant="body2">
-                    <b>Capacity:</b> {tour.capacity}
+                    <b>{t("pages.tourDetails.fields.capacity")}:</b> {tour.capacity ?? "—"}
                   </Typography>
                   <Typography variant="body2">
-                    <b>Hot:</b> {tour.hot ? "Yes" : "No"}
+                    <b>{t("pages.tourDetails.fields.hot")}:</b>{" "}
+                    {tour.hot ? t("common.yes") : t("common.no")}
                   </Typography>
                   <Typography variant="body2">
-                    <b>Active:</b> {tour.active ? "Yes" : "No"}
+                    <b>{t("pages.tourDetails.fields.active")}:</b>{" "}
+                    {tour.active ? t("common.yes") : t("common.no")}
                   </Typography>
                   <Typography variant="body2">
-                    <b>Check-in:</b> {String(tour.checkIn)}
+                    <b>{t("pages.tourDetails.fields.checkIn")}:</b> {String(tour.checkIn)}
                   </Typography>
                   <Typography variant="body2">
-                    <b>Check-out:</b> {String(tour.checkOut)}
+                    <b>{t("pages.tourDetails.fields.checkOut")}:</b> {String(tour.checkOut)}
                   </Typography>
                 </Stack>
 
                 <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ pt: 1 }}>
-                  <Chip label={tour.tourType} size="small" />
-                  <Chip label={tour.transferType} size="small" />
-                  <Chip label={tour.hotelType} size="small" />
+                  <Chip label={trTourType(tour.tourType)} size="small" />
+                  <Chip label={trTransferType(tour.transferType)} size="small" />
+                  <Chip label={trHotelType(tour.hotelType)} size="small" />
                 </Stack>
 
                 {/* ---- Order button */}
@@ -275,12 +298,12 @@ export default function TourDetailsPage() {
                     onClick={handleOpenOrderDialog}
                     disabled={!canOrder}
                   >
-                    Оформити замовлення
+                    {t("pages.tourDetails.order.open")}
                   </Button>
 
                   {!tour.active && (
                     <Alert severity="warning" sx={{ m: 0, flexGrow: 1 }}>
-                      Цей тур неактивний, замовлення недоступне.
+                      {t("pages.tourDetails.order.inactiveWarning")}
                     </Alert>
                   )}
                 </Stack>
@@ -292,12 +315,12 @@ export default function TourDetailsPage() {
           <Card sx={{ borderRadius: 3, boxShadow: "0 10px 30px rgba(0,0,0,0.06)" }}>
             <CardContent>
               <Stack spacing={1}>
-                <Typography variant="h6">Відгуки</Typography>
+                <Typography variant="h6">{t("pages.tourDetails.reviews.title")}</Typography>
 
                 {reviewsLoading && (
                   <Stack direction="row" spacing={1} alignItems="center">
                     <CircularProgress size={18} />
-                    <Typography variant="body2">Loading reviews...</Typography>
+                    <Typography variant="body2">{t("pages.tourDetails.reviews.loading")}</Typography>
                   </Stack>
                 )}
 
@@ -305,7 +328,7 @@ export default function TourDetailsPage() {
 
                 {!reviewsLoading && !reviewsError && reviews.length === 0 && (
                   <Typography variant="body2" color="text.secondary">
-                    Поки що немає відгуків для цього туру.
+                    {t("pages.tourDetails.reviews.empty")}
                   </Typography>
                 )}
 
@@ -324,16 +347,6 @@ export default function TourDetailsPage() {
                                   sx={{ width: "fit-content" }}
                                 />
                               )}
-                              {/* {r.userName && (
-                                <Typography variant="body2">
-                                  <b>{r.userName}</b>
-                                </Typography>
-                              )}
-                              {!r.userName && r.userId && (
-                                <Typography variant="body2">
-                                  <b>{r.userId}</b>
-                                </Typography>
-                              )} */}
                             </Stack>
 
                             {r.createdAt && (
@@ -344,7 +357,7 @@ export default function TourDetailsPage() {
                           </Stack>
 
                           <Typography variant="body2">
-                            {r.comment ?? "(no text)"}
+                            {r.comment ?? t("pages.tourDetails.reviews.noText")}
                           </Typography>
                         </Stack>
                       </Box>
@@ -357,32 +370,32 @@ export default function TourDetailsPage() {
 
           {/* ---- Order dialog */}
           <Dialog open={orderOpen} onClose={() => setOrderOpen(false)} fullWidth maxWidth="sm">
-            <DialogTitle>Оформлення замовлення</DialogTitle>
+            <DialogTitle>{t("pages.tourDetails.order.dialog.title")}</DialogTitle>
 
             <DialogContent dividers>
               <Stack spacing={1.2}>
                 <Typography variant="body2">
-                  Ви оформлюєте замовлення на тур: <b>{tour.title}</b>
+                  {t("pages.tourDetails.order.dialog.youOrder")} <b>{tour.title}</b>
                 </Typography>
                 <Typography variant="body2">
-                  Сума: <b>{tour.price}</b>
+                  {t("pages.tourDetails.order.dialog.amount")} <b>{formatMoney(tour.price)}</b>
                 </Typography>
 
                 {orderError && <Alert severity="error">{orderError}</Alert>}
 
                 <FormControlLabel
                   control={<Checkbox checked={agree} onChange={(e) => setAgree(e.target.checked)} />}
-                  label="Погоджуюсь з умовами та підтверджую оформлення."
+                  label={t("pages.tourDetails.order.dialog.agree")}
                 />
               </Stack>
             </DialogContent>
 
             <DialogActions>
               <Button onClick={() => setOrderOpen(false)} disabled={orderSubmitting}>
-                Скасувати
+                {t("common.cancel")}
               </Button>
               <Button variant="contained" onClick={handleSubmitOrder} disabled={!agree || orderSubmitting}>
-                Підтвердити
+                {t("pages.tourDetails.order.dialog.confirm")}
               </Button>
             </DialogActions>
           </Dialog>

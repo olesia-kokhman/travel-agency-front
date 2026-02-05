@@ -1,582 +1,459 @@
+// src/pages/admin/AdminUserDetailsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
   Button,
   Card,
-  CardActionArea,
   CardContent,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
-  MenuItem,
-  Select,
   Stack,
   Typography,
 } from "@mui/material";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import * as usersApi from "../../api/users.api";
-import type { UserResponseDto } from "../../api/users.api";
-
 import * as ordersApi from "../../api/orders.api";
-import type { OrderResponseDto } from "../../api/orders.api";
-
+import * as reviewsApi from "../../api/reviews.api";
 import * as paymentsApi from "../../api/payments.api";
+
+import type { UserResponseDto } from "../../api/users.api";
+import type { OrderResponseDto } from "../../api/orders.api";
+import type { ReviewResponseDto } from "../../api/reviews.api";
 import type { PaymentResponseDto } from "../../api/payments.api";
 
-import * as reviewsApi from "../../api/reviews.api";
-import type { ReviewResponseDto } from "../../api/reviews.api";
-
-import { http } from "../../api/http";
-import { useAuth } from "../../auth/AuthContext";
-
-type ApiSuccessResponse<T> = {
-  status: string;
-  message: string;
-  results: T;
-};
-
-type UserAccessUpdateDto = {
-  active?: boolean | null;
-  role?: string | null;
-};
-
-const ROLE_OPTIONS = ["USER", "MANAGER", "ADMIN"] as const;
-
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
-}
-
-function formatMoney(v: any) {
-  if (v === null || v === undefined) return "—";
+function formatMoney(v: any, na: string) {
+  if (v === null || v === undefined || v === "") return na;
   const n = typeof v === "string" ? Number(v) : v;
   if (Number.isFinite(n)) return n.toFixed(2);
   return String(v);
 }
 
-function getActive(u: UserResponseDto): boolean | null {
-  if (typeof u.active === "boolean") return u.active;
-  if (typeof u.enabled === "boolean") return u.enabled;
-  return null;
+function formatDate(value: string | null | undefined, na: string) {
+  if (!value) return na;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleString();
 }
 
-function statusLabel(u: UserResponseDto) {
-  const a = getActive(u);
-  if (a === null) return "—";
-  return a ? "ACTIVE" : "INACTIVE";
-}
-
-function statusColor(label: string): "success" | "warning" | "default" {
-  if (label === "ACTIVE") return "success";
-  if (label === "INACTIVE") return "warning";
-  return "default";
-}
-
-function pickRole(u: UserResponseDto): string {
-  const direct = u.role != null ? String(u.role) : "";
-  if (direct) return direct;
-  if (Array.isArray(u.roles) && u.roles.length > 0) return String(u.roles[0]);
-  return "—";
-}
-
-function FieldRow({ label, value }: { label: string; value: any }) {
-  const text = value === null || value === undefined || value === "" ? "—" : String(value);
+function Row({ label, value, na }: { label: string; value: any; na: string }) {
+  const text = value === null || value === undefined || value === "" ? na : String(value);
   return (
-    <Stack direction="row" spacing={1} sx={{ py: 0.4 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ width: 120, flexShrink: 0 }}>
-        {label}:
+    <Stack direction="row" spacing={1} sx={{ py: 0.5 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160 }}>
+        {label}
       </Typography>
-      <Typography variant="body2" sx={{ wordBreak: "break-word" }}>
-        {text}
-      </Typography>
+      <Typography variant="body2">{text}</Typography>
     </Stack>
   );
 }
 
-async function patchUserAdmin(userId: string, dto: UserAccessUpdateDto): Promise<UserResponseDto> {
-  const { data } = await http.patch<ApiSuccessResponse<UserResponseDto>>(`/api/users/${userId}`, dto);
-  return data.results;
-}
-
-async function deleteUserAdmin(userId: string): Promise<void> {
-  await http.delete<ApiSuccessResponse<void>>(`/api/users/${userId}`);
-}
-
-// ---- UI helpers for orders/payments/reviews ----
-
-function orderChipColor(status?: string | null): "success" | "warning" | "default" {
-  const s = (status ?? "").toUpperCase();
-  if (!s) return "default";
-  if (s === "PAID") return "success";
-  if (s === "CANCELED" || s === "CANCELLED") return "warning";
-  return "default";
-}
-
-function paymentChipColor(status?: string | null): "success" | "warning" | "default" {
-  const s = (status ?? "").toUpperCase();
-  if (!s) return "default";
-  if (s === "SUCCESS") return "success";
-  return "warning";
-}
-
-// ---- auth helpers (MANAGER should not see admin actions) ----
-function normalizeRole(r: string) {
-  return (r ?? "").trim().toUpperCase();
-}
-function hasRole(userRoles: string[], role: string) {
-  const target = normalizeRole(role);
-  return (userRoles ?? []).some((r) => {
-    const rr = normalizeRole(r);
-    return rr === target || rr === `ROLE_${target}` || rr.replace(/^ROLE_/, "") === target;
-  });
-}
-
 export default function AdminUserDetailsPage() {
+  const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { userId } = useParams();
+  const { t } = useTranslation();
 
-  const auth = useAuth();
-  const isManager = useMemo(() => hasRole(auth.roles ?? [], "MANAGER"), [auth.roles]);
+  const na = t("common.na");
 
   const [user, setUser] = useState<UserResponseDto | null>(null);
 
   const [orders, setOrders] = useState<OrderResponseDto[]>([]);
-  const [payments, setPayments] = useState<PaymentResponseDto[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+
   const [reviews, setReviews] = useState<ReviewResponseDto[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+  const [payments, setPayments] = useState<PaymentResponseDto[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [paymentsError, setPaymentsError] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [busy, setBusy] = useState(false);
-
-  // role dialog
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [roleValue, setRoleValue] = useState<string>("USER");
-
-  const userTitle = useMemo(() => {
-    if (!user) return "User details";
-    const full = `${user.name ?? ""} ${user.surname ?? ""}`.trim();
-    return full || user.email;
-  }, [user]);
-
-  const loadAll = async () => {
+  const load = async () => {
     if (!userId) return;
 
+    // ---- USER (blocking)
     setError(null);
     setLoading(true);
+
     try {
       const u = await usersApi.getUserById(userId);
       setUser(u);
-
-      const [o, p, r] = await Promise.all([
-        ordersApi.getOrdersByUser(userId),
-        paymentsApi.getPaymentsByUserAdmin(userId),
-        reviewsApi.getReviewsByUser(userId),
-      ]);
-
-      setOrders(o);
-      setPayments(p);
-      setReviews(r);
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to load user details";
+      const msg = err?.response?.data?.message ?? t("pages.adminUserDetails.errors.loadUser");
       setError(msg);
+      setUser(null);
     } finally {
       setLoading(false);
+    }
+
+    // ---- ORDERS
+    setOrdersError(null);
+    setOrdersLoading(true);
+    try {
+      const list = await ordersApi.getOrdersByUser(userId);
+      setOrders(list ?? []);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? t("pages.adminUserDetails.errors.loadOrders");
+      setOrdersError(msg);
+    } finally {
+      setOrdersLoading(false);
+    }
+
+    // ---- REVIEWS
+    setReviewsError(null);
+    setReviewsLoading(true);
+    try {
+      const list = await reviewsApi.getReviewsByUser(userId);
+      setReviews(list ?? []);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? t("pages.adminUserDetails.errors.loadReviews");
+      setReviewsError(msg);
+    } finally {
+      setReviewsLoading(false);
+    }
+
+    // ---- PAYMENTS
+    setPaymentsError(null);
+    setPaymentsLoading(true);
+    try {
+      const list = await paymentsApi.getPaymentsByUser(userId);
+      setPayments(list ?? []);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? t("pages.adminUserDetails.errors.loadPayments");
+      setPaymentsError(msg);
+    } finally {
+      setPaymentsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAll();
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
-  const openRoleDialog = () => {
-    if (!user) return;
-    setRoleValue(pickRole(user) === "—" ? "USER" : pickRole(user));
-    setRoleDialogOpen(true);
-  };
+  const title = useMemo(() => {
+    if (!user) return t("pages.adminUserDetails.titleFallback");
+    const name = `${user.name ?? ""} ${user.surname ?? ""}`.trim();
+    if (name) return t("pages.adminUserDetails.titleWithName", { name });
+    return t("pages.adminUserDetails.titleWithId", { id: user.id });
+  }, [user, t]);
 
-  const closeRoleDialog = () => setRoleDialogOpen(false);
-
-  const handleSaveRole = async () => {
-    if (!user || !userId) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const updated = await patchUserAdmin(userId, { role: roleValue });
-      setUser(updated);
-      closeRoleDialog();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to update role";
-      setError(msg);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleToggleBlock = async () => {
-    if (!user || !userId) return;
-
-    const currentActive = getActive(user);
-    const nextActive = currentActive === false ? true : false;
-
-    const label = nextActive ? "Unblock" : "Block";
-    if (!confirm(`${label} this user?`)) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      const updated = await patchUserAdmin(userId, { active: nextActive });
-      setUser(updated);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to update user status";
-      setError(msg);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!userId || !user) return;
-    if (!confirm(`Delete user ${user.email}? This action is irreversible.`)) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      await deleteUserAdmin(userId);
-      navigate("/admin/users");
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to delete user";
-      setError(msg);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const roleText = useMemo(() => {
+    if (!user) return na;
+    if (user.role) return String(user.role);
+    if (Array.isArray(user.roles) && user.roles.length > 0) return user.roles.join(", ");
+    return na;
+  }, [user, na]);
 
   if (loading) {
     return (
-      <Box sx={{ py: 6, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
+      <Box sx={{ maxWidth: 1200, mx: "auto", p: 2, display: "flex", justifyContent: "center", py: 6 }}>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2">{t("pages.adminUserDetails.loading.page")}</Typography>
+        </Stack>
       </Box>
     );
   }
 
-  if (error) return <Alert severity="error">{error}</Alert>;
-  if (!user) return <Alert severity="warning">User not found.</Alert>;
+  if (error) {
+    return (
+      <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="outlined" onClick={() => navigate("/admin/users")}>
+          {t("common.back")}
+        </Button>
+      </Box>
+    );
+  }
 
-  const st = statusLabel(user);
-  const active = getActive(user);
-  const role = pickRole(user);
+  if (!user) {
+    return (
+      <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          {t("pages.adminUserDetails.states.notFound")}
+        </Alert>
+        <Button variant="outlined" onClick={() => navigate("/admin/users")}>
+          {t("common.back")}
+        </Button>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: "auto", px: 2, pb: 3 }}>
-      {/* Header */}
+    <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
       <Stack
-        direction={{ xs: "column", md: "row" }}
-        spacing={2}
-        sx={{ mb: 2, pt: 2 }}
-        alignItems={{ xs: "stretch", md: "center" }}
+        direction={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "stretch", sm: "center" }}
+        spacing={1}
+        sx={{ mb: 2 }}
       >
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
+        <Typography variant="h4">{title}</Typography>
+
+        <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap">
           <Button variant="outlined" onClick={() => navigate("/admin/users")} sx={{ borderRadius: 2 }}>
-            Back
+            {t("common.back")}
           </Button>
-          <Box>
-            <Typography variant="h5" sx={{ lineHeight: 1.15 }}>
-              {userTitle}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Admin user details • Related data below (orders/payments/reviews)
-            </Typography>
-          </Box>
         </Stack>
-
-        {/* ✅ hide actions for MANAGER */}
-        {!isManager && (
-          <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="flex-end">
-            <Button variant="outlined" disabled={busy} onClick={openRoleDialog} sx={{ borderRadius: 2 }}>
-              Change role
-            </Button>
-
-            <Button variant="outlined" disabled={busy} onClick={handleToggleBlock} sx={{ borderRadius: 2 }}>
-              {active === false ? "Unblock" : "Block"}
-            </Button>
-
-            <Button variant="outlined" color="error" disabled={busy} onClick={handleDelete} sx={{ borderRadius: 2 }}>
-              Delete
-            </Button>
-          </Stack>
-        )}
       </Stack>
 
-      {/* USER INFO - bigger, clean rows */}
-      <Card variant="outlined" sx={{ mb: 2.5, borderRadius: 3, overflow: "hidden" }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
-            justifyContent="space-between"
-            alignItems={{ xs: "flex-start", md: "center" }}
-          >
-            <Box sx={{ minWidth: 320 }}>
-              <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
-                User info
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Main profile + access info
-              </Typography>
-            </Box>
-
-            <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-              <Chip label={st} color={statusColor(st)} variant="outlined" />
-              <Chip label={`Role: ${role}`} variant="outlined" />
-              <Chip label={`Balance: ${formatMoney(user.balance)}`} variant="outlined" />
+      <Stack spacing={2}>
+        {/* USER */}
+        <Card variant="outlined">
+          <CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+              <Typography variant="h6">{t("pages.adminUserDetails.sections.user")}</Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip label={t("pages.adminUserDetails.chips.role", { role: roleText })} />
+                <Chip
+                  label={t("pages.adminUserDetails.chips.active", {
+                    value: String(user.active ?? user.enabled ?? na),
+                  })}
+                  variant="outlined"
+                />
+              </Stack>
             </Stack>
-          </Stack>
 
-          <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1.5 }} />
 
-          <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
-            <Box sx={{ flex: 1 }}>
-              <FieldRow label="Name" value={user.name ?? "—"} />
-              <FieldRow label="Surname" value={user.surname ?? "—"} />
-              <FieldRow label="Email" value={user.email} />
-              <FieldRow label="Phone" value={user.phoneNumber ?? "—"} />
-              <FieldRow label="Role" value={role} />
-              <FieldRow label="Active" value={st} />
-            </Box>
+            <Row label={t("pages.adminUserDetails.fields.userId")} value={user.id} na={na} />
+            <Row label={t("pages.adminUserDetails.fields.email")} value={user.email ?? na} na={na} />
+            <Row
+              label={t("pages.adminUserDetails.fields.name")}
+              value={`${user.name ?? ""} ${user.surname ?? ""}`.trim() || na}
+              na={na}
+            />
+            <Row label={t("pages.adminUserDetails.fields.phone")} value={user.phoneNumber ?? na} na={na} />
+            <Row label={t("pages.adminUserDetails.fields.balance")} value={formatMoney(user.balance, na)} na={na} />
+            <Row label={t("pages.adminUserDetails.fields.created")} value={formatDate(user.createdAt, na)} na={na} />
+            <Row label={t("pages.adminUserDetails.fields.updated")} value={formatDate(user.updatedAt, na)} na={na} />
+          </CardContent>
+        </Card>
 
-            <Box sx={{ flex: 1 }}>
-              <FieldRow label="Balance" value={formatMoney(user.balance)} />
-              <FieldRow label="User ID" value={user.id} />
-              <FieldRow label="Created" value={formatDate(user.createdAt ?? null)} />
-              <FieldRow label="Updated" value={formatDate(user.updatedAt ?? null)} />
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
+        {/* ORDERS */}
+        <Card variant="outlined">
+          <CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+              <Typography variant="h6">{t("pages.adminUserDetails.sections.orders")}</Typography>
+              <Chip label={t("pages.adminUserDetails.chips.count", { count: orders.length })} variant="outlined" />
+            </Stack>
 
-      {/* ORDERS */}
-      <Card variant="outlined" sx={{ mb: 2.5, borderRadius: 3, overflow: "hidden" }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={1}>
-            <Typography variant="h6">Orders</Typography>
-            <Chip label={`Total: ${orders.length}`} variant="outlined" />
-          </Stack>
+            <Divider sx={{ my: 1.5 }} />
 
-          <Divider sx={{ my: 2 }} />
+            {ordersLoading && (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={18} />
+                <Typography variant="body2">{t("pages.adminUserDetails.loading.orders")}</Typography>
+              </Stack>
+            )}
 
-          {orders.length === 0 ? (
-            <Alert severity="info">No orders for this user.</Alert>
-          ) : (
-            <Stack spacing={1.5}>
-              {orders.map((o) => (
-                <Card key={o.id} variant="outlined" sx={{ borderRadius: 2.5, overflow: "hidden" }}>
-                  <CardActionArea onClick={() => navigate(`/admin/orders/${o.id}`)}>
-                    <CardContent sx={{ p: 2.25 }}>
-                      <Stack
-                        direction={{ xs: "column", md: "row" }}
-                        spacing={1.5}
-                        justifyContent="space-between"
-                        alignItems={{ xs: "flex-start", md: "center" }}
+            {ordersError && <Alert severity="error">{ordersError}</Alert>}
+
+            {!ordersLoading && !ordersError && orders.length === 0 && (
+              <Alert severity="info">{t("pages.adminUserDetails.orders.empty")}</Alert>
+            )}
+
+            {!ordersLoading && !ordersError && orders.length > 0 && (
+              <Stack spacing={1}>
+                {orders.map((o) => (
+                  <Box
+                    key={o.id}
+                    sx={{
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      borderRadius: 2,
+                      p: 1.2,
+                    }}
+                  >
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      alignItems={{ xs: "flex-start", sm: "center" }}
+                      justifyContent="space-between"
+                    >
+                      <Stack spacing={0.3}>
+                        <Typography variant="body2">
+                          <b>{o.orderNumber ?? o.id}</b>
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {t("pages.adminUserDetails.orders.meta", {
+                            status: o.status ?? na,
+                            total: formatMoney(o.totalAmount, na),
+                            created: formatDate(o.createdAt, na),
+                          })}
+                        </Typography>
+                      </Stack>
+
+                      <Button
+                        component={RouterLink}
+                        to={`/admin/orders/${o.id}`}
+                        variant="contained"
+                        size="small"
+                        sx={{ borderRadius: 2 }}
                       >
-                        <Box sx={{ minWidth: 260 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.15 }}>
-                            {o.orderNumber}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Tour ID: {o.tourId}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Created: {formatDate(o.createdAt)} • Updated: {formatDate(o.updatedAt)}
-                          </Typography>
-                        </Box>
-
-                        <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-                          <Chip label={`Order: ${o.status ?? "—"}`} color={orderChipColor(o.status)} variant="outlined" />
-                          <Chip label={`Total: ${formatMoney(o.totalAmount)}`} variant="outlined" />
-                          <Chip
-                            label={
-                              o.payment
-                                ? `Payment: ${o.payment.status}${o.payment.paymentMethod ? ` (${o.payment.paymentMethod})` : ""}`
-                                : "Payment: —"
-                            }
-                            color={o.payment ? paymentChipColor(o.payment.status) : "default"}
-                            variant="outlined"
-                          />
-                          <Chip
-                            label={o.review?.rating != null ? `Review: ${o.review.rating}/5` : "Review: —"}
-                            color={o.review?.rating != null ? "info" : "default"}
-                            variant="outlined"
-                          />
-                        </Stack>
-                      </Stack>
-                    </CardContent>
-                  </CardActionArea>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* PAYMENTS */}
-      <Card variant="outlined" sx={{ mb: 2.5, borderRadius: 3, overflow: "hidden" }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={1}>
-            <Typography variant="h6">Payments</Typography>
-            <Chip label={`Total: ${payments.length}`} variant="outlined" />
-          </Stack>
-
-          <Divider sx={{ my: 2 }} />
-
-          {payments.length === 0 ? (
-            <Alert severity="info">No payments for this user.</Alert>
-          ) : (
-            <Stack spacing={1.5}>
-              {payments.map((p) => (
-                <Card key={p.id} variant="outlined" sx={{ borderRadius: 2.5, overflow: "hidden" }}>
-                  <CardContent sx={{ p: 2.25 }}>
-                    <Stack
-                      direction={{ xs: "column", md: "row" }}
-                      spacing={1.5}
-                      justifyContent="space-between"
-                      alignItems={{ xs: "flex-start", md: "center" }}
-                    >
-                      <Box sx={{ minWidth: 260 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.15 }}>
-                          Payment #{p.id}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Order ID: {p.orderId}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Paid at: {p.paidAt ? formatDate(p.paidAt) : "—"}
-                        </Typography>
-                      </Box>
-
-                      <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-                        <Chip label={`Status: ${p.status ?? "—"}`} color={paymentChipColor(p.status)} variant="outlined" />
-                        <Chip label={`Method: ${p.paymentMethod ?? "—"}`} variant="outlined" />
-                        <Chip label={`Amount: ${formatMoney(p.amount)}`} variant="outlined" />
-
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => navigate(`/admin/orders/${p.orderId}`)}
-                          sx={{ borderRadius: 2 }}
-                        >
-                          Open order
-                        </Button>
-                      </Stack>
+                        {t("pages.adminUserDetails.orders.openOrder")}
+                      </Button>
                     </Stack>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
 
-                    {p.failureReason ? (
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        Failure: {p.failureReason}
+        {/* PAYMENTS */}
+        <Card variant="outlined">
+          <CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+              <Typography variant="h6">{t("pages.adminUserDetails.sections.payments")}</Typography>
+              <Chip label={t("pages.adminUserDetails.chips.count", { count: payments.length })} variant="outlined" />
+            </Stack>
+
+            <Divider sx={{ my: 1.5 }} />
+
+            {paymentsLoading && (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={18} />
+                <Typography variant="body2">{t("pages.adminUserDetails.loading.payments")}</Typography>
+              </Stack>
+            )}
+
+            {paymentsError && <Alert severity="error">{paymentsError}</Alert>}
+
+            {!paymentsLoading && !paymentsError && payments.length === 0 && (
+              <Alert severity="info">{t("pages.adminUserDetails.payments.empty")}</Alert>
+            )}
+
+            {!paymentsLoading && !paymentsError && payments.length > 0 && (
+              <Stack spacing={1}>
+                {payments.map((p) => (
+                  <Box
+                    key={p.id}
+                    sx={{
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      borderRadius: 2,
+                      p: 1.2,
+                    }}
+                  >
+                    <Stack spacing={0.4}>
+                      <Typography variant="body2">
+                        <b>{t("pages.adminUserDetails.payments.paymentTitle", { id: p.id })}</b>
                       </Typography>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* REVIEWS */}
-      <Card variant="outlined" sx={{ borderRadius: 3, overflow: "hidden" }}>
-        <CardContent sx={{ p: 3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" spacing={1}>
-            <Typography variant="h6">Reviews</Typography>
-            <Chip label={`Total: ${reviews.length}`} variant="outlined" />
-          </Stack>
+                      <Typography variant="caption" color="text.secondary">
+                        {t("pages.adminUserDetails.payments.meta", {
+                          status: p.status ?? na,
+                          method: p.paymentMethod ?? na,
+                          amount: formatMoney(p.amount, na),
+                          paid: formatDate(p.paidAt, na),
+                        })}
+                      </Typography>
 
-          <Divider sx={{ my: 2 }} />
-
-          {reviews.length === 0 ? (
-            <Alert severity="info">No reviews for this user.</Alert>
-          ) : (
-            <Stack spacing={1.5}>
-              {reviews.map((r) => (
-                <Card key={r.id} variant="outlined" sx={{ borderRadius: 2.5, overflow: "hidden" }}>
-                  <CardContent sx={{ p: 2.25 }}>
-                    <Stack
-                      direction={{ xs: "column", md: "row" }}
-                      spacing={1.5}
-                      justifyContent="space-between"
-                      alignItems={{ xs: "flex-start", md: "center" }}
-                    >
-                      <Box sx={{ minWidth: 260 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.15 }}>
-                          Review #{r.id}
+                      {p.failureReason && (
+                        <Typography variant="caption" color="error">
+                          {t("pages.adminUserDetails.payments.failure", { reason: p.failureReason })}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Order ID: {r.orderId}
+                      )}
+
+                      {p.orderId && (
+                        <Button
+                          component={RouterLink}
+                          to={`/admin/orders/${p.orderId}`}
+                          variant="text"
+                          size="small"
+                          sx={{ width: "fit-content", p: 0, textTransform: "none" }}
+                        >
+                          {t("pages.adminUserDetails.payments.openRelatedOrder")}
+                        </Button>
+                      )}
+                    </Stack>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* REVIEWS */}
+        <Card variant="outlined">
+          <CardContent>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+              <Typography variant="h6">{t("pages.adminUserDetails.sections.reviews")}</Typography>
+              <Chip label={t("pages.adminUserDetails.chips.count", { count: reviews.length })} variant="outlined" />
+            </Stack>
+
+            <Divider sx={{ my: 1.5 }} />
+
+            {reviewsLoading && (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={18} />
+                <Typography variant="body2">{t("pages.adminUserDetails.loading.reviews")}</Typography>
+              </Stack>
+            )}
+
+            {reviewsError && <Alert severity="error">{reviewsError}</Alert>}
+
+            {!reviewsLoading && !reviewsError && reviews.length === 0 && (
+              <Alert severity="info">{t("pages.adminUserDetails.reviews.empty")}</Alert>
+            )}
+
+            {!reviewsLoading && !reviewsError && reviews.length > 0 && (
+              <Stack spacing={1}>
+                {reviews.map((r) => (
+                  <Box
+                    key={r.id}
+                    sx={{
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      borderRadius: 2,
+                      p: 1.2,
+                    }}
+                  >
+                    <Stack spacing={0.4}>
+                      <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" flexWrap="wrap">
+                        <Typography variant="body2">
+                          <b>{t("pages.adminUserDetails.reviews.reviewTitle", { id: r.id })}</b>
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Created: {formatDate(r.createdAt)} • Updated: {formatDate(r.updatedAt)}
+                          {formatDate(r.createdAt, na)}
                         </Typography>
-                      </Box>
-
-                      <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
-                        <Chip label={`Rating: ${r.rating}/5`} color="info" variant="outlined" />
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => navigate(`/admin/orders/${r.orderId}`)}
-                          sx={{ borderRadius: 2 }}
-                        >
-                          Open order
-                        </Button>
                       </Stack>
+
+                      <Typography variant="body2">
+                        {typeof r.rating === "number"
+                          ? t("pages.adminUserDetails.reviews.rating", { value: r.rating })
+                          : na}
+                      </Typography>
+
+                      <Typography variant="body2">{r.comment ?? t("pages.adminUserDetails.reviews.noText")}</Typography>
+
+                      {r.orderId && (
+                        <Button
+                          component={RouterLink}
+                          to={`/admin/orders/${r.orderId}`}
+                          variant="text"
+                          size="small"
+                          sx={{ width: "fit-content", p: 0, textTransform: "none" }}
+                        >
+                          {t("pages.adminUserDetails.reviews.openRelatedOrder")}
+                        </Button>
+                      )}
                     </Stack>
-
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Comment: {r.comment ? r.comment : "—"}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              ))}
-            </Stack>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ✅ Role dialog hidden for MANAGER */}
-      {!isManager && (
-        <Dialog open={roleDialogOpen} onClose={closeRoleDialog} fullWidth maxWidth="xs">
-          <DialogTitle>Change role</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              User: {user.email}
-            </Typography>
-
-            <Select fullWidth value={roleValue} onChange={(e) => setRoleValue(String(e.target.value))}>
-              {ROLE_OPTIONS.map((r) => (
-                <MenuItem key={r} value={r}>
-                  {r}
-                </MenuItem>
-              ))}
-            </Select>
-          </DialogContent>
-
-          <DialogActions>
-            <Button onClick={closeRoleDialog}>Cancel</Button>
-            <Button variant="contained" onClick={handleSaveRole} disabled={busy}>
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      )}
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </CardContent>
+        </Card>
+      </Stack>
     </Box>
   );
 }

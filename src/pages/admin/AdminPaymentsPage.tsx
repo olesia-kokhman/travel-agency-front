@@ -24,6 +24,7 @@ import {
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import * as paymentsApi from "../../api/payments.api";
 import type { PaymentResponseDto } from "../../api/payments.api";
@@ -81,20 +82,6 @@ function isNonEmpty(v?: string | null) {
   return !!v && v.trim().length > 0;
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
-}
-
-function formatMoney(v: any) {
-  if (v === null || v === undefined) return "—";
-  const n = typeof v === "string" ? Number(v) : v;
-  if (Number.isFinite(n)) return n.toFixed(2);
-  return String(v);
-}
-
 function statusColor(status?: string | null): "success" | "warning" | "default" {
   const s = (status ?? "").toUpperCase();
   if (!s) return "default";
@@ -103,9 +90,12 @@ function statusColor(status?: string | null): "success" | "warning" | "default" 
 }
 
 export default function AdminPaymentsPage() {
+  const { t } = useTranslation();
+  const NA = t("common.na");
+
   const navigate = useNavigate();
 
-  // optional "search in current page" (backend doesn't have q in PaymentFilter)
+  // optional "search in current page"
   const [q, setQ] = useState("");
   const qDebounced = useDebouncedValue(q, 250);
 
@@ -131,6 +121,30 @@ export default function AdminPaymentsPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return NA;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString();
+  };
+
+  const formatMoney = (v: any) => {
+    if (v === null || v === undefined) return NA;
+    const n = typeof v === "string" ? Number(v) : v;
+    if (Number.isFinite(n)) return n.toFixed(2);
+    return String(v);
+  };
+
+  const labelPaymentStatus = (status?: string | null) => {
+    const s = (status ?? "").toUpperCase();
+    return s ? t(`enums.paymentStatus.${s}`, s) : NA;
+  };
+
+  const labelPaymentMethod = (method?: string | null) => {
+    const m = (method ?? "").toUpperCase();
+    return m ? t(`enums.paymentMethod.${m}`, m) : NA;
+  };
 
   const filter = useMemo<paymentsApi.PaymentFilter>(() => {
     const f: paymentsApi.PaymentFilter = {};
@@ -179,7 +193,8 @@ export default function AdminPaymentsPage() {
       const msg =
         err?.response?.data?.statusMessage ??
         err?.response?.data?.message ??
-        "Failed to load payments";
+        t("pages.adminPayments.errors.load");
+
       setError(msg);
       setItems([]);
       setTotalPages(1);
@@ -219,18 +234,57 @@ export default function AdminPaymentsPage() {
   const activeFilterChips = useMemo(() => {
     const chips: { key: string; label: string; onDelete: () => void }[] = [];
 
-    if (statuses.length) chips.push({ key: "st", label: `statuses: ${statuses.join(", ")}`, onDelete: () => setStatuses([]) });
-    if (methods.length) chips.push({ key: "m", label: `methods: ${methods.join(", ")}`, onDelete: () => setMethods([]) });
-    if (minAmount.trim()) chips.push({ key: "min", label: `min: ${minAmount}`, onDelete: () => setMinAmount("") });
-    if (maxAmount.trim()) chips.push({ key: "max", label: `max: ${maxAmount}`, onDelete: () => setMaxAmount("") });
-    if (paidFrom.trim()) chips.push({ key: "from", label: `paidFrom: ${paidFrom}`, onDelete: () => setPaidFrom("") });
-    if (paidTo.trim()) chips.push({ key: "to", label: `paidTo: ${paidTo}`, onDelete: () => setPaidTo("") });
-    if (typeof hasFailureReason === "boolean") {
-      chips.push({ key: "fail", label: `hasFailureReason: ${hasFailureReason}`, onDelete: () => setHasFailureReason(null) });
-    }
+    if (statuses.length)
+      chips.push({
+        key: "st",
+        label: t("pages.adminPayments.chips.statuses", { value: statuses.join(", ") }),
+        onDelete: () => setStatuses([]),
+      });
+
+    if (methods.length)
+      chips.push({
+        key: "m",
+        label: t("pages.adminPayments.chips.methods", { value: methods.join(", ") }),
+        onDelete: () => setMethods([]),
+      });
+
+    if (minAmount.trim())
+      chips.push({
+        key: "min",
+        label: t("pages.adminPayments.chips.min", { value: minAmount }),
+        onDelete: () => setMinAmount(""),
+      });
+
+    if (maxAmount.trim())
+      chips.push({
+        key: "max",
+        label: t("pages.adminPayments.chips.max", { value: maxAmount }),
+        onDelete: () => setMaxAmount(""),
+      });
+
+    if (paidFrom.trim())
+      chips.push({
+        key: "from",
+        label: t("pages.adminPayments.chips.paidFrom", { value: paidFrom }),
+        onDelete: () => setPaidFrom(""),
+      });
+
+    if (paidTo.trim())
+      chips.push({
+        key: "to",
+        label: t("pages.adminPayments.chips.paidTo", { value: paidTo }),
+        onDelete: () => setPaidTo(""),
+      });
+
+    if (typeof hasFailureReason === "boolean")
+      chips.push({
+        key: "fail",
+        label: t("pages.adminPayments.chips.hasFailureReason", { value: String(hasFailureReason) }),
+        onDelete: () => setHasFailureReason(null),
+      });
 
     return chips;
-  }, [statuses, methods, minAmount, maxAmount, paidFrom, paidTo, hasFailureReason]);
+  }, [statuses, methods, minAmount, maxAmount, paidFrom, paidTo, hasFailureReason, t]);
 
   const clearAllFilters = () => {
     setStatuses([]);
@@ -261,10 +315,12 @@ export default function AdminPaymentsPage() {
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
-            Payments
+            {t("pages.adminPayments.title")}
           </Typography>
+
           <Typography variant="body2" color="text.secondary">
-            {loading ? "Loading…" : `Found: ${totalElements}`} • Page {page + 1} / {totalPages}
+            {(loading ? t("pages.adminPayments.meta.loading") : t("pages.adminPayments.meta.found", { count: totalElements }))}{" "}
+            • {t("pages.adminPayments.meta.pageOf", { page: page + 1, total: totalPages })}
           </Typography>
         </Box>
 
@@ -272,8 +328,8 @@ export default function AdminPaymentsPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           size="small"
-          label="Search in page"
-          placeholder="status/method/orderId/failure…"
+          label={t("pages.adminPayments.search.label")}
+          placeholder={t("pages.adminPayments.search.placeholder")}
           fullWidth
         />
       </Stack>
@@ -285,29 +341,29 @@ export default function AdminPaymentsPage() {
         <Stack spacing={1.6}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
             <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel id="sort-label">Sort</InputLabel>
+              <InputLabel id="sort-label">{t("pages.adminPayments.toolbar.sort")}</InputLabel>
               <Select
                 labelId="sort-label"
-                label="Sort"
+                label={t("pages.adminPayments.toolbar.sort")}
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
               >
-                <MenuItem value="PAID_DESC">PaidAt: newest</MenuItem>
-                <MenuItem value="PAID_ASC">PaidAt: oldest</MenuItem>
-                <MenuItem value="AMOUNT_DESC">Amount: high → low</MenuItem>
-                <MenuItem value="AMOUNT_ASC">Amount: low → high</MenuItem>
-                <MenuItem value="STATUS_ASC">Status: A → Z</MenuItem>
-                <MenuItem value="STATUS_DESC">Status: Z → A</MenuItem>
-                <MenuItem value="METHOD_ASC">Method: A → Z</MenuItem>
-                <MenuItem value="METHOD_DESC">Method: Z → A</MenuItem>
+                <MenuItem value="PAID_DESC">{t("pages.adminPayments.sort.paidDesc")}</MenuItem>
+                <MenuItem value="PAID_ASC">{t("pages.adminPayments.sort.paidAsc")}</MenuItem>
+                <MenuItem value="AMOUNT_DESC">{t("pages.adminPayments.sort.amountDesc")}</MenuItem>
+                <MenuItem value="AMOUNT_ASC">{t("pages.adminPayments.sort.amountAsc")}</MenuItem>
+                <MenuItem value="STATUS_ASC">{t("pages.adminPayments.sort.statusAsc")}</MenuItem>
+                <MenuItem value="STATUS_DESC">{t("pages.adminPayments.sort.statusDesc")}</MenuItem>
+                <MenuItem value="METHOD_ASC">{t("pages.adminPayments.sort.methodAsc")}</MenuItem>
+                <MenuItem value="METHOD_DESC">{t("pages.adminPayments.sort.methodDesc")}</MenuItem>
               </Select>
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel id="size-label">Per page</InputLabel>
+              <InputLabel id="size-label">{t("pages.adminPayments.toolbar.perPage")}</InputLabel>
               <Select
                 labelId="size-label"
-                label="Per page"
+                label={t("pages.adminPayments.toolbar.perPage")}
                 value={String(size)}
                 onChange={(e) => setSize(Number(e.target.value))}
               >
@@ -326,7 +382,7 @@ export default function AdminPaymentsPage() {
                 onClick={() => setShowFilters((v) => !v)}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Filters
+                {t("pages.adminPayments.toolbar.filters")}
               </Button>
 
               <Button
@@ -335,7 +391,7 @@ export default function AdminPaymentsPage() {
                 onClick={clearAllFilters}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Reset
+                {t("pages.adminPayments.toolbar.reset")}
               </Button>
             </Stack>
           </Stack>
@@ -346,34 +402,34 @@ export default function AdminPaymentsPage() {
             <Stack spacing={1.4}>
               <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
                 <FormControl size="small" fullWidth>
-                  <InputLabel id="statuses-label">Statuses</InputLabel>
+                  <InputLabel id="statuses-label">{t("pages.adminPayments.filters.statuses")}</InputLabel>
                   <Select
                     labelId="statuses-label"
-                    label="Statuses"
+                    label={t("pages.adminPayments.filters.statuses")}
                     multiple
                     value={statuses}
                     onChange={(e) => setStatuses(e.target.value as string[])}
                   >
                     {PAYMENT_STATUSES.map((s) => (
                       <MenuItem key={s} value={s}>
-                        {s}
+                        {labelPaymentStatus(s)}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
 
                 <FormControl size="small" fullWidth>
-                  <InputLabel id="methods-label">Methods</InputLabel>
+                  <InputLabel id="methods-label">{t("pages.adminPayments.filters.methods")}</InputLabel>
                   <Select
                     labelId="methods-label"
-                    label="Methods"
+                    label={t("pages.adminPayments.filters.methods")}
                     multiple
                     value={methods}
                     onChange={(e) => setMethods(e.target.value as string[])}
                   >
                     {PAYMENT_METHODS.map((m) => (
                       <MenuItem key={m} value={m}>
-                        {m}
+                        {labelPaymentMethod(m)}
                       </MenuItem>
                     ))}
                   </Select>
@@ -381,32 +437,49 @@ export default function AdminPaymentsPage() {
               </Stack>
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
-                <TextField value={minAmount} onChange={(e) => setMinAmount(e.target.value)} label="Min amount" size="small" fullWidth />
-                <TextField value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)} label="Max amount" size="small" fullWidth />
+                <TextField
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                  label={t("pages.adminPayments.filters.minAmount")}
+                  size="small"
+                  fullWidth
+                />
+                <TextField
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                  label={t("pages.adminPayments.filters.maxAmount")}
+                  size="small"
+                  fullWidth
+                />
               </Stack>
 
               <Stack direction={{ xs: "column", md: "row" }} spacing={1.2}>
                 <TextField
                   value={paidFrom}
                   onChange={(e) => setPaidFrom(e.target.value)}
-                  label="Paid from (ISO)"
-                  placeholder="2026-02-01T00:00:00"
+                  label={t("pages.adminPayments.filters.paidFrom")}
+                  placeholder={t("pages.adminPayments.filters.paidFromPlaceholder")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={paidTo}
                   onChange={(e) => setPaidTo(e.target.value)}
-                  label="Paid to (ISO)"
-                  placeholder="2026-02-10T23:59:59"
+                  label={t("pages.adminPayments.filters.paidTo")}
+                  placeholder={t("pages.adminPayments.filters.paidToPlaceholder")}
                   size="small"
                   fullWidth
                 />
               </Stack>
 
               <FormControlLabel
-                control={<Switch checked={hasFailureReason === true} onChange={(e) => setHasFailureReason(e.target.checked ? true : null)} />}
-                label="Has failure reason"
+                control={
+                  <Switch
+                    checked={hasFailureReason === true}
+                    onChange={(e) => setHasFailureReason(e.target.checked ? true : null)}
+                  />
+                }
+                label={t("pages.adminPayments.filters.hasFailureReason")}
               />
             </Stack>
           </Collapse>
@@ -426,7 +499,7 @@ export default function AdminPaymentsPage() {
 
       {/* List */}
       {!error && visibleItems.length === 0 ? (
-        <Alert severity="info">No payments found.</Alert>
+        <Alert severity="info">{t("pages.adminPayments.list.empty")}</Alert>
       ) : (
         <Stack spacing={2}>
           {visibleItems.map((p) => (
@@ -440,31 +513,49 @@ export default function AdminPaymentsPage() {
                 >
                   <Box sx={{ minWidth: 320 }}>
                     <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
-                      Payment {p.id}
+                      {t("pages.adminPayments.list.paymentTitle", { id: p.id })}
                     </Typography>
 
                     <Typography variant="body2" color="text.secondary">
-                      Order ID: {p.orderId}
+                      {t("pages.adminPayments.list.orderId", { id: p.orderId })}
                     </Typography>
 
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      Failure reason: {p.failureReason || "—"}
+                      {t("pages.adminPayments.list.failureReason", { value: p.failureReason || NA })}
                     </Typography>
                   </Box>
 
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                    <Chip label={`Status: ${p.status ?? "—"}`} color={statusColor(p.status)} variant="outlined" />
-                    <Chip label={`Method: ${p.paymentMethod ?? "—"}`} variant="outlined" />
-                    <Chip label={`Amount: ${formatMoney(p.amount)}`} variant="outlined" />
-                    <Chip label={`Paid at: ${p.paidAt ? formatDate(p.paidAt) : "—"}`} variant="outlined" />
+                    <Chip
+                      label={t("pages.adminPayments.badges.status", { value: labelPaymentStatus(p.status) })}
+                      color={statusColor(p.status)}
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={t("pages.adminPayments.badges.method", { value: labelPaymentMethod(p.paymentMethod) })}
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={t("pages.adminPayments.badges.amount", { value: formatMoney(p.amount) })}
+                      variant="outlined"
+                    />
+                    <Chip
+                      label={t("pages.adminPayments.badges.paidAt", { value: p.paidAt ? formatDate(p.paidAt) : NA })}
+                      variant="outlined"
+                    />
                   </Stack>
                 </Stack>
 
                 <Divider sx={{ my: 1.75 }} />
 
                 <Stack direction="row" justifyContent="flex-end">
-                  <Button variant="contained" size="small" onClick={() => openOrder(p.orderId)} sx={{ borderRadius: 2 }}>
-                    Open order
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => openOrder(p.orderId)}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    {t("pages.adminPayments.list.openOrder")}
                   </Button>
                 </Stack>
               </CardContent>

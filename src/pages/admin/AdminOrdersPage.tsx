@@ -25,12 +25,13 @@ import {
 import FilterAltOutlinedIcon from "@mui/icons-material/FilterAltOutlined";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import * as ordersApi from "../../api/orders.api";
 import type { AdminOrderResponseDto } from "../../api/orders.api";
 import { useAuth } from "../../auth/AuthContext";
 
-const ORDER_STATUSES = ["CREATED", "PAID", "CANCELED"] as const; // підправ якщо в тебе інші enum-и
+const ORDER_STATUSES = ["CREATED", "PAID", "CANCELED"] as const;
 
 type SortOption =
   | "CREATED_DESC"
@@ -78,24 +79,24 @@ function normalize(v?: string | null) {
   return (v ?? "").toString().trim().toLowerCase();
 }
 
-function formatMoney(v: any) {
-  if (v === null || v === undefined) return "—";
+function formatMoney(v: any, na: string) {
+  if (v === null || v === undefined) return na;
   const n = typeof v === "string" ? Number(v) : v;
   if (Number.isFinite(n)) return n.toFixed(2);
   return String(v);
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return "—";
+function formatDate(value: string | null | undefined, na: string) {
+  if (!value) return na;
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
+  if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleString();
 }
 
-function userLabel(o: AdminOrderResponseDto) {
+function userLabel(o: AdminOrderResponseDto, na: string) {
   const u = o.user;
   const full = `${u?.name ?? ""} ${u?.surname ?? ""}`.trim();
-  return u?.email || full || "—";
+  return u?.email || full || na;
 }
 
 function paymentChipColor(status?: string | null): "success" | "warning" | "default" {
@@ -134,16 +135,18 @@ function isNonEmpty(v?: string | null) {
 }
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation();
+  const na = t("common.na");
+
   const navigate = useNavigate();
   const auth = useAuth();
   const isManager = useMemo(() => hasRole(auth.roles ?? [], "MANAGER"), [auth.roles]);
 
-  // ===== search (client-side) on top of server results =====
-  // (бо бек не має q для orders; фільтримо тільки отриману сторінку)
+  // search (client-side) on current server page
   const [q, setQ] = useState("");
   const qDebounced = useDebouncedValue(q, 300);
 
-  // ===== server-side filters =====
+  // server-side filters
   const [showFilters, setShowFilters] = useState(false);
 
   const [statuses, setStatuses] = useState<string[]>([]);
@@ -160,7 +163,7 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
 
-  // ===== data =====
+  // data
   const [orders, setOrders] = useState<AdminOrderResponseDto[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
@@ -212,7 +215,7 @@ export default function AdminOrdersPage() {
       const msg =
         err?.response?.data?.statusMessage ??
         err?.response?.data?.message ??
-        "Failed to load admin orders";
+        t("pages.adminOrders.errors.load");
 
       setError(msg);
       setOrders([]);
@@ -271,28 +274,56 @@ export default function AdminOrdersPage() {
     const chips: { key: string; label: string; onDelete: () => void }[] = [];
 
     if (statuses.length)
-      chips.push({ key: "statuses", label: `statuses: ${statuses.join(", ")}`, onDelete: () => setStatuses([]) });
+      chips.push({
+        key: "statuses",
+        label: t("pages.adminOrders.chips.statuses", { value: statuses.join(", ") }),
+        onDelete: () => setStatuses([]),
+      });
 
     if (isNonEmpty(minTotal))
-      chips.push({ key: "minTotal", label: `minTotal: ${minTotal}`, onDelete: () => setMinTotal("") });
+      chips.push({
+        key: "minTotal",
+        label: t("pages.adminOrders.chips.minTotal", { value: minTotal }),
+        onDelete: () => setMinTotal(""),
+      });
 
     if (isNonEmpty(maxTotal))
-      chips.push({ key: "maxTotal", label: `maxTotal: ${maxTotal}`, onDelete: () => setMaxTotal("") });
+      chips.push({
+        key: "maxTotal",
+        label: t("pages.adminOrders.chips.maxTotal", { value: maxTotal }),
+        onDelete: () => setMaxTotal(""),
+      });
 
     if (isNonEmpty(createdFrom))
-      chips.push({ key: "createdFrom", label: `from: ${createdFrom}`, onDelete: () => setCreatedFrom("") });
+      chips.push({
+        key: "createdFrom",
+        label: t("pages.adminOrders.chips.createdFrom", { value: createdFrom }),
+        onDelete: () => setCreatedFrom(""),
+      });
 
     if (isNonEmpty(createdTo))
-      chips.push({ key: "createdTo", label: `to: ${createdTo}`, onDelete: () => setCreatedTo("") });
+      chips.push({
+        key: "createdTo",
+        label: t("pages.adminOrders.chips.createdTo", { value: createdTo }),
+        onDelete: () => setCreatedTo(""),
+      });
 
     if (typeof hasPayment === "boolean")
-      chips.push({ key: "hasPayment", label: `hasPayment: ${hasPayment}`, onDelete: () => setHasPayment(null) });
+      chips.push({
+        key: "hasPayment",
+        label: t("pages.adminOrders.chips.hasPayment", { value: String(hasPayment) }),
+        onDelete: () => setHasPayment(null),
+      });
 
     if (typeof hasReview === "boolean")
-      chips.push({ key: "hasReview", label: `hasReview: ${hasReview}`, onDelete: () => setHasReview(null) });
+      chips.push({
+        key: "hasReview",
+        label: t("pages.adminOrders.chips.hasReview", { value: String(hasReview) }),
+        onDelete: () => setHasReview(null),
+      });
 
     return chips;
-  }, [statuses, minTotal, maxTotal, createdFrom, createdTo, hasPayment, hasReview]);
+  }, [statuses, minTotal, maxTotal, createdFrom, createdTo, hasPayment, hasReview, t]);
 
   const clearAllFilters = () => {
     setStatuses([]);
@@ -310,7 +341,7 @@ export default function AdminOrdersPage() {
 
   const handleCancel = async (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
-    if (!confirm("Cancel this order?")) return;
+    if (!confirm(t("pages.adminOrders.confirm.cancel"))) return;
 
     setBusyId(orderId);
     setError(null);
@@ -318,7 +349,7 @@ export default function AdminOrdersPage() {
       await ordersApi.updateOrderStatusAdmin(orderId, { status: "CANCELED" });
       await load();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to cancel order";
+      const msg = err?.response?.data?.message ?? t("pages.adminOrders.errors.cancel");
       setError(msg);
     } finally {
       setBusyId(null);
@@ -327,7 +358,7 @@ export default function AdminOrdersPage() {
 
   const handleDelete = async (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
-    if (!confirm("Delete this order permanently?")) return;
+    if (!confirm(t("pages.adminOrders.confirm.delete"))) return;
 
     setBusyId(orderId);
     setError(null);
@@ -335,7 +366,7 @@ export default function AdminOrdersPage() {
       await ordersApi.deleteOrderAdmin(orderId);
       await load();
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Failed to delete order";
+      const msg = err?.response?.data?.message ?? t("pages.adminOrders.errors.delete");
       setError(msg);
     } finally {
       setBusyId(null);
@@ -345,7 +376,10 @@ export default function AdminOrdersPage() {
   if (loading) {
     return (
       <Box sx={{ py: 6, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
+        <Stack direction="row" spacing={1} alignItems="center">
+          <CircularProgress />
+          <Typography variant="body2">{t("pages.adminOrders.states.loading")}</Typography>
+        </Stack>
       </Box>
     );
   }
@@ -358,10 +392,10 @@ export default function AdminOrdersPage() {
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" sx={{ lineHeight: 1.15 }}>
-            Orders
+            {t("pages.adminOrders.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Found: {totalElements} • Page {page + 1} / {totalPages}
+            {t("pages.adminOrders.subtitle", { total: totalElements, page: page + 1, pages: totalPages })}
           </Typography>
         </Box>
 
@@ -369,8 +403,8 @@ export default function AdminOrdersPage() {
         <TextField
           fullWidth
           size="small"
-          label="Search in page"
-          placeholder="order/user/payment/review…"
+          label={t("pages.adminOrders.search.label")}
+          placeholder={t("pages.adminOrders.search.placeholder")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -381,29 +415,29 @@ export default function AdminOrdersPage() {
         <Stack spacing={1.6}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.2} alignItems={{ md: "center" }}>
             <FormControl size="small" sx={{ minWidth: 220 }}>
-              <InputLabel id="sort-label">Sort</InputLabel>
+              <InputLabel id="sort-label">{t("pages.adminOrders.toolbar.sort")}</InputLabel>
               <Select
                 labelId="sort-label"
-                label="Sort"
+                label={t("pages.adminOrders.toolbar.sort")}
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortOption)}
               >
-                <MenuItem value="CREATED_DESC">Created: newest</MenuItem>
-                <MenuItem value="CREATED_ASC">Created: oldest</MenuItem>
-                <MenuItem value="TOTAL_ASC">Total: low → high</MenuItem>
-                <MenuItem value="TOTAL_DESC">Total: high → low</MenuItem>
-                <MenuItem value="STATUS_ASC">Status: A → Z</MenuItem>
-                <MenuItem value="STATUS_DESC">Status: Z → A</MenuItem>
-                <MenuItem value="ORDERNO_ASC">Order #: A → Z</MenuItem>
-                <MenuItem value="ORDERNO_DESC">Order #: Z → A</MenuItem>
+                <MenuItem value="CREATED_DESC">{t("pages.adminOrders.sortOptions.CREATED_DESC")}</MenuItem>
+                <MenuItem value="CREATED_ASC">{t("pages.adminOrders.sortOptions.CREATED_ASC")}</MenuItem>
+                <MenuItem value="TOTAL_ASC">{t("pages.adminOrders.sortOptions.TOTAL_ASC")}</MenuItem>
+                <MenuItem value="TOTAL_DESC">{t("pages.adminOrders.sortOptions.TOTAL_DESC")}</MenuItem>
+                <MenuItem value="STATUS_ASC">{t("pages.adminOrders.sortOptions.STATUS_ASC")}</MenuItem>
+                <MenuItem value="STATUS_DESC">{t("pages.adminOrders.sortOptions.STATUS_DESC")}</MenuItem>
+                <MenuItem value="ORDERNO_ASC">{t("pages.adminOrders.sortOptions.ORDERNO_ASC")}</MenuItem>
+                <MenuItem value="ORDERNO_DESC">{t("pages.adminOrders.sortOptions.ORDERNO_DESC")}</MenuItem>
               </Select>
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 140 }}>
-              <InputLabel id="size-label">Per page</InputLabel>
+              <InputLabel id="size-label">{t("pages.adminOrders.toolbar.perPage")}</InputLabel>
               <Select
                 labelId="size-label"
-                label="Per page"
+                label={t("pages.adminOrders.toolbar.perPage")}
                 value={String(size)}
                 onChange={(e) => setSize(Number(e.target.value))}
               >
@@ -422,7 +456,7 @@ export default function AdminOrdersPage() {
                 onClick={() => setShowFilters((v) => !v)}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Filters
+                {t("pages.adminOrders.toolbar.filters")}
               </Button>
 
               <Button
@@ -431,7 +465,7 @@ export default function AdminOrdersPage() {
                 onClick={clearAllFilters}
                 sx={{ borderRadius: 2, textTransform: "none" }}
               >
-                Reset
+                {t("pages.adminOrders.toolbar.reset")}
               </Button>
             </Stack>
           </Stack>
@@ -441,10 +475,10 @@ export default function AdminOrdersPage() {
 
             <Stack spacing={1.4}>
               <FormControl size="small" fullWidth>
-                <InputLabel id="statuses-label">Statuses</InputLabel>
+                <InputLabel id="statuses-label">{t("pages.adminOrders.filters.statuses")}</InputLabel>
                 <Select
                   labelId="statuses-label"
-                  label="Statuses"
+                  label={t("pages.adminOrders.filters.statuses")}
                   multiple
                   value={statuses}
                   onChange={(e) => setStatuses(e.target.value as string[])}
@@ -461,14 +495,14 @@ export default function AdminOrdersPage() {
                 <TextField
                   value={minTotal}
                   onChange={(e) => setMinTotal(e.target.value)}
-                  label="Min total amount"
+                  label={t("pages.adminOrders.filters.minTotal")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={maxTotal}
                   onChange={(e) => setMaxTotal(e.target.value)}
-                  label="Max total amount"
+                  label={t("pages.adminOrders.filters.maxTotal")}
                   size="small"
                   fullWidth
                 />
@@ -478,16 +512,16 @@ export default function AdminOrdersPage() {
                 <TextField
                   value={createdFrom}
                   onChange={(e) => setCreatedFrom(e.target.value)}
-                  label="Created from (ISO)"
-                  placeholder="2026-02-01T00:00:00"
+                  label={t("pages.adminOrders.filters.createdFrom")}
+                  placeholder={t("pages.adminOrders.filters.createdFromPh")}
                   size="small"
                   fullWidth
                 />
                 <TextField
                   value={createdTo}
                   onChange={(e) => setCreatedTo(e.target.value)}
-                  label="Created to (ISO)"
-                  placeholder="2026-02-10T23:59:59"
+                  label={t("pages.adminOrders.filters.createdTo")}
+                  placeholder={t("pages.adminOrders.filters.createdToPh")}
                   size="small"
                   fullWidth
                 />
@@ -501,7 +535,7 @@ export default function AdminOrdersPage() {
                       onChange={(e) => setHasPayment(e.target.checked ? true : null)}
                     />
                   }
-                  label="Has payment"
+                  label={t("pages.adminOrders.filters.hasPayment")}
                 />
 
                 <FormControlLabel
@@ -511,11 +545,11 @@ export default function AdminOrdersPage() {
                       onChange={(e) => setHasReview(e.target.checked ? true : null)}
                     />
                   }
-                  label="Has review"
+                  label={t("pages.adminOrders.filters.hasReview")}
                 />
 
                 <Typography variant="body2" color="text.secondary" sx={{ ml: { sm: "auto" } }}>
-                  Tip: switch off = do not filter by that field.
+                  {t("pages.adminOrders.filters.tip")}
                 </Typography>
               </Stack>
             </Stack>
@@ -537,25 +571,27 @@ export default function AdminOrdersPage() {
       {/* Results meta */}
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
         <Typography variant="body2" color="text.secondary">
-          Showing on this page: {filteredPage.length}
+          {t("pages.adminOrders.meta.showingOnPage", { count: filteredPage.length })}
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
-        {!loading && totalPages > 1 && (
+        {totalPages > 1 && (
           <Typography variant="body2" color="text.secondary">
-            Page {page + 1} / {totalPages}
+            {t("pages.adminOrders.meta.pageOf", { page: page + 1, pages: totalPages })}
           </Typography>
         )}
       </Stack>
 
       {/* List */}
       {filteredPage.length === 0 ? (
-        <Alert severity="info">No orders found.</Alert>
+        <Alert severity="info">{t("pages.adminOrders.states.empty")}</Alert>
       ) : (
         <Stack spacing={2}>
           {filteredPage.map((o) => {
             const payment = o.payment;
             const review = o.review;
             const busy = busyId === o.id;
+
+            const paymentMethodSuffix = payment?.paymentMethod ? ` (${payment.paymentMethod})` : "";
 
             return (
               <Card key={o.id} variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
@@ -573,28 +609,45 @@ export default function AdminOrdersPage() {
                         </Typography>
 
                         <Typography variant="body2" color="text.secondary">
-                          User: {userLabel(o)}
+                          {t("pages.adminOrders.card.user", { value: userLabel(o, na) })}
                         </Typography>
 
                         <Typography variant="caption" color="text.secondary">
-                          Created: {formatDate(o.createdAt)} • Updated: {formatDate(o.updatedAt)}
+                          {t("pages.adminOrders.card.createdUpdated", {
+                            created: formatDate(o.createdAt, na),
+                            updated: formatDate(o.updatedAt, na),
+                          })}
                         </Typography>
                       </Box>
 
                       <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                        <Chip label={`Order: ${o.status ?? "—"}`} color={orderChipColor(o.status)} variant="outlined" />
-                        <Chip label={`Total: ${formatMoney(o.totalAmount)}`} variant="outlined" />
+                        <Chip
+                          label={t("pages.adminOrders.card.orderChip", { value: o.status ?? na })}
+                          color={orderChipColor(o.status)}
+                          variant="outlined"
+                        />
+                        <Chip
+                          label={t("pages.adminOrders.card.totalChip", { value: formatMoney(o.totalAmount, na) })}
+                          variant="outlined"
+                        />
                         <Chip
                           label={
                             payment
-                              ? `Payment: ${payment.status}${payment.paymentMethod ? ` (${payment.paymentMethod})` : ""}`
-                              : "Payment: —"
+                              ? t("pages.adminOrders.card.paymentChip", {
+                                  status: payment.status ?? na,
+                                  method: paymentMethodSuffix,
+                                })
+                              : t("pages.adminOrders.card.paymentChipNone")
                           }
                           color={payment ? paymentChipColor(payment.status) : "default"}
                           variant="outlined"
                         />
                         <Chip
-                          label={review?.rating != null ? `Review: ${review.rating}/5` : "Review: —"}
+                          label={
+                            review?.rating != null
+                              ? t("pages.adminOrders.card.reviewChip", { rating: review.rating })
+                              : t("pages.adminOrders.card.reviewChipNone")
+                          }
                           color={review?.rating != null ? "info" : "default"}
                           variant="outlined"
                         />
@@ -611,15 +664,19 @@ export default function AdminOrdersPage() {
                     >
                       <Stack spacing={0.5}>
                         <Typography variant="body2" color="text.secondary">
-                          Tour ID: {o.tourId}
+                          {t("pages.adminOrders.card.tourId", { value: o.tourId })}
                         </Typography>
 
                         <Typography variant="body2" color="text.secondary">
-                          Paid at: {payment?.paidAt ? formatDate(payment.paidAt) : "—"}
+                          {t("pages.adminOrders.card.paidAt", {
+                            value: payment?.paidAt ? formatDate(payment.paidAt, na) : na,
+                          })}
                         </Typography>
 
                         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 850 }}>
-                          Review: {review?.comment ? review.comment : "—"}
+                          {t("pages.adminOrders.card.review", {
+                            value: review?.comment ? review.comment : na,
+                          })}
                         </Typography>
                       </Stack>
 
@@ -632,7 +689,7 @@ export default function AdminOrdersPage() {
                           onClick={(e) => e.stopPropagation()}
                           sx={{ borderRadius: 2 }}
                         >
-                          Open tour
+                          {t("pages.adminOrders.actions.openTour")}
                         </Button>
 
                         <Button
@@ -642,7 +699,7 @@ export default function AdminOrdersPage() {
                           onClick={(e) => handleCancel(e, o.id)}
                           sx={{ borderRadius: 2 }}
                         >
-                          Cancel
+                          {t("pages.adminOrders.actions.cancel")}
                         </Button>
 
                         {!isManager && (
@@ -654,7 +711,7 @@ export default function AdminOrdersPage() {
                             onClick={(e) => handleDelete(e, o.id)}
                             sx={{ borderRadius: 2 }}
                           >
-                            Delete
+                            {t("pages.adminOrders.actions.delete")}
                           </Button>
                         )}
                       </Stack>
@@ -668,7 +725,7 @@ export default function AdminOrdersPage() {
       )}
 
       {/* Pagination */}
-      {!loading && totalPages > 1 && (
+      {totalPages > 1 && (
         <Stack direction="row" justifyContent="center" sx={{ py: 1 }}>
           <Pagination count={totalPages} page={page + 1} onChange={(_, p) => setPage(p - 1)} shape="rounded" />
         </Stack>

@@ -15,6 +15,7 @@ import {
 import { http } from "../api/http";
 import { getAccessToken } from "../auth/tokenStorage";
 import { getUserIdFromToken, parseJwt } from "../auth/jwt";
+import { useTranslation } from "react-i18next";
 
 type ApiSuccessResponse<T> = {
   status: string;
@@ -44,6 +45,7 @@ function statusColor(status: string): "default" | "success" | "warning" | "error
 }
 
 export default function OrdersPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [orders, setOrders] = React.useState<OrderResponseDto[]>([]);
@@ -56,40 +58,37 @@ export default function OrdersPage() {
         setLoading(true);
         setError(null);
 
-        const token = getAccessToken(); // ✅ беремо через storage
+        const token = getAccessToken();
         if (!token) {
-          setError("Немає access token. Перелогінься.");
+          setError(t("pages.orders.errors.noToken"));
           return;
         }
 
-        // Debug (тимчасово): подивись payload у консолі
+        // Debug (тимчасово)
         console.log("[JWT payload]", parseJwt(token));
 
         const userId = getUserIdFromToken(token);
         if (!userId) {
-          setError("Не можу витягнути userId з access token. Перевір claim userId/id у JWT.");
+          setError(t("pages.orders.errors.noUserId"));
           return;
         }
 
-        const res = await http.get<ApiSuccessResponse<OrderResponseDto[]>>(
-          `/api/orders/me/${userId}`
-        );
-
+        const res = await http.get<ApiSuccessResponse<OrderResponseDto[]>>(`/api/orders/me/${userId}`);
         setOrders(res.data.results ?? []);
       } catch (e: any) {
-        setError(e?.response?.data?.message ?? e?.message ?? "Помилка завантаження ордерів");
+        setError(e?.response?.data?.message ?? e?.message ?? t("pages.orders.errors.loadFailed"));
       } finally {
         setLoading(false);
       }
     };
 
     run();
-  }, []);
+  }, [t]);
 
   return (
     <Box sx={{ maxWidth: 1000, mx: "auto", p: 2 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Orders
+        {t("pages.orders.title")}
       </Typography>
 
       {loading && (
@@ -106,7 +105,7 @@ export default function OrdersPage() {
 
       {!loading && !error && orders.length === 0 && (
         <Alert severity="info" sx={{ mt: 2 }}>
-          Ордерів поки немає.
+          {t("pages.orders.empty")}
         </Alert>
       )}
 
@@ -118,9 +117,11 @@ export default function OrdersPage() {
                 <CardContent>
                   <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
                     <Box>
-                      <Typography variant="h6">Order #{o.orderNumber}</Typography>
+                      <Typography variant="h6">
+                        {t("pages.orders.card.orderNumber", { orderNumber: o.orderNumber })}
+                      </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Order ID: {o.id}
+                        {t("pages.orders.card.orderId")}: {o.id}
                       </Typography>
                     </Box>
 
@@ -130,14 +131,14 @@ export default function OrdersPage() {
                   <Box sx={{ mt: 2, display: "flex", gap: 3, flexWrap: "wrap" }}>
                     <Box>
                       <Typography variant="caption" color="text.secondary">
-                        Total amount
+                        {t("pages.orders.card.totalAmount")}
                       </Typography>
                       <Typography variant="body1">{o.totalAmount}</Typography>
                     </Box>
 
                     <Box>
                       <Typography variant="caption" color="text.secondary">
-                        Tour ID
+                        {t("pages.orders.card.tourId")}
                       </Typography>
                       <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
                         {o.tourId}

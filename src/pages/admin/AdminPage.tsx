@@ -1,55 +1,51 @@
 import React, { useMemo } from "react";
 import { Box, Card, CardContent, Tab, Tabs, Typography } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
-import AdminUsersTab from "./AdminUsersPage";
-import AdminOrdersTab from "./AdminOrdersPage";
-import AdminPaymentsTab from "./AdminPaymentsPage";
+type TabKey = "users" | "orders" | "payments";
 
-const tabs = [
-  { key: "users", label: "Users" },
-  { key: "orders", label: "Orders" },
-  { key: "payments", label: "Payments" },
-] as const;
+const tabToPath: Record<TabKey, string> = {
+  users: "/admin/users",
+  orders: "/admin/orders",
+  payments: "/admin/payments",
+};
 
-type TabKey = (typeof tabs)[number]["key"];
-
-function parseTab(search: string): TabKey {
-  const sp = new URLSearchParams(search);
-  const t = (sp.get("tab") || "users").toLowerCase();
-  if (t === "users" || t === "orders" || t === "payments") return t;
+function pathToTab(pathname: string): TabKey {
+  if (pathname.startsWith("/admin/orders")) return "orders";
+  if (pathname.startsWith("/admin/payments")) return "payments";
   return "users";
 }
 
 export default function AdminPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentTab = useMemo(() => parseTab(location.search), [location.search]);
+
+  const currentTab = useMemo(() => pathToTab(location.pathname), [location.pathname]);
 
   const handleChange = (_: React.SyntheticEvent, next: TabKey) => {
-    const sp = new URLSearchParams(location.search);
-    sp.set("tab", next);
-    navigate({ pathname: "/admin", search: sp.toString() }, { replace: true });
+    navigate(tabToPath[next]);
   };
 
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto", p: 2 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Admin Panel
+        {t("pages.adminPage.title")}
       </Typography>
 
-      <Card>
+      <Card sx={{ borderRadius: 3 }}>
         <CardContent>
           <Tabs value={currentTab} onChange={handleChange}>
-            {tabs.map(t => (
-              <Tab key={t.key} value={t.key} label={t.label} />
-            ))}
+            <Tab value="users" label={t("pages.adminPage.tabs.users")} />
+            <Tab value="orders" label={t("pages.adminPage.tabs.orders")} />
+            <Tab value="payments" label={t("pages.adminPage.tabs.payments")} />
           </Tabs>
 
-          <Box sx={{ mt: 2 }}>
-            {currentTab === "users" && <AdminUsersTab />}
-            {currentTab === "orders" && <AdminOrdersTab />}
-            {currentTab === "payments" && <AdminPaymentsTab />}
+          <Box sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              {t("pages.adminPage.hint")}
+            </Typography>
           </Box>
         </CardContent>
       </Card>

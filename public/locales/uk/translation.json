@@ -1,0 +1,868 @@
+{
+  "app": {
+    "brand": "Туристична агенція"
+  },
+  "nav": {
+    "home": "Головна",
+    "tours": "Тури",
+    "orders": "Замовлення",
+    "profile": "Профіль",
+    "admin": "Адмін"
+  },
+  "menu": {
+    "account": "Акаунт",
+    "profile": "Профіль",
+    "logout": "Вийти"
+  },
+  "common": {
+    "loading": "Завантаження…",
+    "error": "Щось пішло не так",
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "edit": "Редагувати",
+    "delete": "Видалити"
+  },
+  "admin": {
+    "title": "Адмін панель",
+    "users": "Користувачі",
+    "orders": "Замовлення",
+    "payments": "Платежі",
+    "accessDenied": "Доступ заборонено. Адмін-панель доступна лише для ADMIN/MANAGER."
+  },
+  "pages": {
+    "tours": {
+      "title": "Тури",
+      "actions": {
+        "addTour": "+ Додати тур",
+        "makeHot": "Зробити HOT",
+        "unmakeHot": "Зняти HOT"
+      },
+      "search": {
+        "label": "Пошук",
+        "placeholder": "назва/опис…"
+      },
+      "sort": {
+        "label": "Сортування",
+        "hotFirst": "Спочатку гарячі",
+        "priceAsc": "Ціна: від меншої → більшої",
+        "priceDesc": "Ціна: від більшої → меншої",
+        "checkInAsc": "Заїзд: раніше → пізніше",
+        "checkInDesc": "Заїзд: пізніше → раніше",
+        "titleAsc": "Назва: А → Я",
+        "titleDesc": "Назва: Я → А"
+      },
+      "pagination": {
+        "perPage": "На сторінці",
+        "pageOf": "Сторінка {{page}} / {{total}}"
+      },
+      "filters": {
+        "toggle": "Фільтри",
+        "reset": "Скинути",
+        "country": "Країна",
+        "city": "Місто",
+        "minPrice": "Мін. ціна",
+        "maxPrice": "Макс. ціна",
+        "minCapacity": "Мін. місткість",
+        "maxCapacity": "Макс. місткість",
+        "tourTypes": "Тип туру",
+        "transferTypes": "Трансфер",
+        "hotelTypes": "Готель",
+        "hotOnly": "Тільки HOT",
+        "activeOnly": "Тільки активні",
+        "tip": "Порада: якщо перемикач вимкнено — фільтр не застосовується.",
+        "chips": {
+          "q": "q: {{value}}",
+          "types": "типи: {{value}}",
+          "transferTypes": "трансфер: {{value}}",
+          "hotelTypes": "готель: {{value}}",
+          "minPrice": "мін.ціна: {{value}}",
+          "maxPrice": "макс.ціна: {{value}}",
+          "country": "країна: {{value}}",
+          "city": "місто: {{value}}",
+          "hot": "hot: {{value}}",
+          "active": "активні: {{value}}",
+          "minCapacity": "мін.містк.: {{value}}",
+          "maxCapacity": "макс.містк.: {{value}}"
+        }
+      },
+      "results": {
+        "found": "Знайдено: {{count}}"
+      },
+      "loadingList": "Завантаження турів…",
+      "empty": "Турів не знайдено.",
+      "badges": {
+        "hot": "HOT",
+        "inactive": "Неактивний"
+      },
+      "confirm": {
+        "delete": "Видалити цей тур?",
+        "toggleHot": "{{action}} для \"{{title}}\"?"
+      },
+      "alerts": {
+        "favoriteStub": "(Чернетка) Додано в улюблені: {{title}}"
+      },
+      "errors": {
+        "loadFailed": "Не вдалося завантажити тури",
+        "deleteFailed": "Не вдалося видалити тур",
+        "updateHotFailed": "Не вдалося оновити HOT"
+      }
+    },
+    "tourDetails": {
+      "loading": "Завантаження туру...",
+      "back": "← Назад до турів",
+      "fields": {
+        "price": "Ціна",
+        "countryCity": "Країна/Місто",
+        "capacity": "Місткість",
+        "hot": "HOT",
+        "active": "Активний",
+        "checkIn": "Заїзд",
+        "checkOut": "Виїзд"
+      },
+      "order": {
+        "open": "Оформити замовлення",
+        "inactiveWarning": "Цей тур неактивний, замовлення недоступне.",
+        "errors": {
+          "createFailed": "Не вдалося створити замовлення"
+        },
+        "dialog": {
+          "title": "Оформлення замовлення",
+          "youOrder": "Ви оформлюєте замовлення на тур:",
+          "amount": "Сума:",
+          "agree": "Погоджуюсь з умовами та підтверджую оформлення.",
+          "confirm": "Підтвердити"
+        }
+      },
+      "reviews": {
+        "title": "Відгуки",
+        "loading": "Завантаження відгуків...",
+        "empty": "Поки що немає відгуків для цього туру.",
+        "noText": "(без тексту)",
+        "errors": {
+          "loadFailed": "Не вдалося завантажити відгуки"
+        }
+      },
+      "confirm": {
+        "delete": "Видалити цей тур?"
+      },
+      "alerts": {
+        "favoriteStub": "(Чернетка) Додано в улюблені: {{title}}"
+      },
+      "errors": {
+        "missingId": "Відсутній tour id",
+        "loadFailed": "Не вдалося завантажити тур",
+        "deleteFailed": "Не вдалося видалити тур"
+      }
+    }, 
+    "tourEdit": {
+  "title": {
+    "edit": "Редагування туру",
+    "create": "Створення туру"
+  },
+  "sections": {
+    "mainInfo": "Основна інформація"
+  },
+  "actions": {
+    "back": "Назад"
+  },
+  "fields": {
+    "title": "Назва",
+    "shortDescription": "Короткий опис",
+    "longDescription": "Довгий опис",
+    "price": "Ціна",
+    "capacity": "Місткість",
+    "country": "Країна",
+    "city": "Місто",
+    "tourType": "Тип туру",
+    "transferType": "Тип трансферу",
+    "hotelType": "Тип готелю",
+    "checkIn": "Заїзд",
+    "checkOut": "Виїзд",
+    "active": "Активний",
+    "hot": "HOT"
+  },
+  "validation": {
+    "titleRequired": "Назва обов'язкова",
+    "shortRequired": "Короткий опис обов'язковий",
+    "longRequired": "Довгий опис обов'язковий",
+    "countryRequired": "Країна обов'язкова",
+    "cityRequired": "Місто обов'язкове",
+    "pricePositive": "Ціна має бути > 0",
+    "capacityPositive": "Місткість має бути > 0",
+    "checkInRequired": "Поле \"Заїзд\" обов'язкове",
+    "checkOutRequired": "Поле \"Виїзд\" обов'язкове",
+    "checkOutAfter": "Виїзд має бути після заїзду"
+  },
+  "errors": {
+    "loadFailed": "Не вдалося завантажити тур",
+    "saveFailed": "Не вдалося зберегти тур"
+  }
+    },
+    "profile": {
+  "title": "Профіль",
+  "actions": {
+    "edit": "Редагувати профіль"
+  },
+  "fields": {
+    "id": "ID",
+    "name": "Ім'я",
+    "surname": "Прізвище",
+    "email": "Email",
+    "phone": "Телефон",
+    "password": "Пароль",
+    "active": "Активний",
+    "balance": "Баланс",
+    "role": "Роль",
+    "createdAt": "Створено",
+    "updatedAt": "Оновлено"
+  },
+  "dialog": {
+    "title": "Редагування профілю",
+    "fields": {
+      "name": "Ім'я",
+      "surname": "Прізвище",
+      "email": "Email",
+      "phone": "Номер телефону",
+      "balance": "Баланс",
+      "password": "Пароль"
+    },
+    "hints": {
+      "phoneFormat": "Формат: +380XXXXXXXXX (10-15 цифр)",
+      "balanceKeep": "Залиш порожнім, щоб не змінювати баланс",
+      "passwordKeep": "Залиш порожнім, щоб не змінювати пароль"
+    },
+    "actions": {
+      "saving": "Збереження..."
+    }
+  },
+  "validation": {
+    "nameMax": "Ім'я має бути не довше 100 символів",
+    "surnameMax": "Прізвище має бути не довше 100 символів",
+    "emailMax": "Email має бути не довше 255 символів",
+    "emailInvalid": "Некоректний формат email",
+    "phoneMax": "Телефон має бути не довше 25 символів",
+    "phoneInvalid": "Телефон має містити 10-15 цифр і може починатися з +",
+    "passwordLength": "Пароль має бути 8-72 символи",
+    "passwordComplexity": "Пароль має містити 1 велику літеру, 1 малу літеру та 1 цифру",
+    "balanceInvalid": "Баланс має бути коректним числом",
+    "balanceNegative": "Баланс не може бути від'ємним",
+    "balanceTooLarge": "Занадто великий баланс"
+  },
+  "errors": {
+    "loadFailed": "Не вдалося завантажити профіль",
+    "updateFailed": "Не вдалося оновити профіль",
+    "notFound": "Профіль не знайдено"
+  }
+},
+"orders": {
+  "title": "Замовлення",
+  "empty": "Замовлень поки немає.",
+  "card": {
+    "orderNumber": "Замовлення №{{orderNumber}}",
+    "orderId": "ID замовлення",
+    "totalAmount": "Сума",
+    "tourId": "ID туру"
+  },
+  "errors": {
+    "noToken": "Немає access token. Перелогінься.",
+    "noUserId": "Не можу витягнути userId з access token. Перевір claim userId/id у JWT.",
+    "loadFailed": "Помилка завантаження ордерів"
+  }
+},
+"orderDetails": {
+  "title": "Деталі замовлення",
+  "actions": {
+    "back": "Назад"
+  },
+  "header": {
+    "orderNumber": "Замовлення №{{orderNumber}}"
+  },
+  "fields": {
+    "totalAmount": "Сума"
+  },
+  "tour": {
+    "title": "Тур",
+    "hint": "Натисни, щоб відкрити сторінку туру",
+    "openBtn": "Відкрити тур"
+  },
+  "payment": {
+    "title": "Оплата",
+    "registeredInfo": "Замовлення зареєстровано і ще не оплачено.",
+    "payBtn": "Оплатити",
+    "paidButMissing": "Статус PAID, але payment не знайдено. Перевір бек/дані.",
+    "cancelledNoPayment": "Замовлення скасовано. Оплати не було.",
+    "cardTitlePaid": "Payment (натисни, щоб відкрити)",
+    "cardTitleInfo": "Payment info (натисни, щоб відкрити)",
+    "unknownStatus": "Невідомий статус: {{status}}",
+    "fields": {
+      "status": "Статус",
+      "method": "Метод",
+      "amount": "Сума",
+      "paidAt": "Сплачено",
+      "failureReason": "Причина помилки"
+    }
+  },
+  "review": {
+    "title": "Відгук",
+    "noneInfo": "Review ще не додано.",
+    "addBtn": "Додати review",
+    "editBtn": "Редагувати",
+    "fields": {
+      "rating": "Рейтинг",
+      "comment": "Коментар",
+      "updated": "Оновлено"
+    },
+    "errors": {
+      "ratingRange": "Rating має бути від 1 до 5.",
+      "commentMax": "Comment має бути максимум 2000 символів.",
+      "saveFailed": "Не вдалося зберегти review"
+    },
+    "dialog": {
+      "createTitle": "Додати review",
+      "editTitle": "Редагувати review",
+      "fields": {
+        "ratingHint": "Rating (1..5)",
+        "comment": "Коментар"
+      },
+      "hints": {
+        "commentCounter": "{{count}}/2000"
+      },
+      "actions": {
+        "saving": "Збереження..."
+      }
+    }
+  },
+  "pay": {
+    "dialog": {
+      "title": "Оплата замовлення",
+      "fields": {
+        "method": "Payment method",
+        "amount": "Сума"
+      },
+      "hints": {
+        "amountFormat": "Формат: 0.01 .. 1000000000.00"
+      },
+      "actions": {
+        "pay": "Оплатити",
+        "processing": "Обробка..."
+      }
+    },
+    "errors": {
+      "amountInvalid": "Вкажи коректну суму (більше 0).",
+      "createFailed": "Не вдалося створити payment"
+    }
+  },
+  "errors": {
+    "missingOrderId": "orderId відсутній у URL",
+    "missingTourId": "tourId відсутній у замовленні (не можу перейти на сторінку туру).",
+    "loadFailed": "Помилка завантаження ордера",
+    "notFound": "Ордер не знайдений."
+  }
+},
+"paymentDetails": {
+  "title": "Оплата",
+  "actions": {
+    "back": "Назад"
+  },
+  "card": {
+    "title": "Інформація про оплату"
+  },
+  "fields": {
+    "paymentId": "ID оплати",
+    "orderId": "ID замовлення",
+    "status": "Статус",
+    "method": "Метод",
+    "amount": "Сума",
+    "paidAt": "Сплачено",
+    "failureReason": "Причина помилки",
+    "createdAt": "Створено",
+    "updatedAt": "Оновлено"
+  },
+  "errors": {
+    "missingOrderId": "orderId відсутній у URL",
+    "loadFailed": "Не вдалося завантажити payment"
+  }
+},
+"home": {
+  "title": "Ласкаво просимо!",
+  "greeting": "Привіт{{email, string}}",
+  "subtitle": "Переглядай тури, створюй замовлення, оплачуй онлайн та залишай відгуки — все в одному місці.",
+  "actions": {
+    "browseTours": "Перейти до турів",
+    "myOrders": "Мої замовлення",
+    "profile": "Профіль"
+  },
+  "about": {
+    "title": "Про наше турагентство",
+    "text": "Допомагаємо спланувати подорож і підібрати тур під твій бюджет та вподобання.",
+    "points": {
+      "search": "Шукай і фільтруй тури за країною, містом, типом і датами",
+      "order": "Створюй замовлення у кілька кліків",
+      "pay": "Оплачуй онлайн і відстежуй статус оплати",
+      "review": "Залишай відгуки після поїздки"
+    }
+  },
+  "tips": {
+    "title": "Швидкі підказки",
+    "subtitle": "Почни звідси:",
+    "items": {
+      "tours": {
+        "title": "Тури",
+        "text": "Переглядай доступні тури та відкривай деталі."
+      },
+      "orders": {
+        "title": "Замовлення",
+        "text": "Переглядай замовлення та керуй оплатами/відгуками."
+      },
+      "profile": {
+        "title": "Профіль",
+        "text": "Оновлюй персональні дані та переглядай роль/баланс."
+      }
+    }
+  }
+},
+"adminPage": {
+  "title": "Адмін-панель",
+  "hint": "Обери розділ для керування даними.",
+  "tabs": {
+    "users": "Користувачі",
+    "orders": "Замовлення",
+    "payments": "Оплати"
+  }
+},
+"adminUsers": {
+  "title": "Користувачі",
+  "meta": {
+    "found": "Знайдено: {{total}}",
+    "page": "Сторінка {{page}} / {{totalPages}}"
+  },
+  "search": {
+    "label": "Пошук",
+    "placeholder": "email / імʼя / телефон…"
+  },
+  "sort": {
+    "label": "Сортування",
+    "createdDesc": "Створено: спочатку нові",
+    "createdAsc": "Створено: спочатку старі",
+    "emailAsc": "Email: A → Z",
+    "emailDesc": "Email: Z → A",
+    "balanceAsc": "Баланс: від меншого",
+    "balanceDesc": "Баланс: від більшого"
+  },
+  "size": {
+    "label": "На сторінці"
+  },
+  "actions": {
+    "filters": "Фільтри",
+    "reset": "Скинути",
+    "changeRole": "Змінити роль",
+    "block": "Заблокувати",
+    "unblock": "Розблокувати",
+    "delete": "Видалити"
+  },
+  "filters": {
+    "roles": "Ролі",
+    "minBalance": "Мін. баланс",
+    "maxBalance": "Макс. баланс",
+    "createdFrom": "Створено від (ISO)",
+    "createdTo": "Створено до (ISO)",
+    "createdIsoPlaceholder": "2026-02-01T00:00:00",
+    "activeOnly": "Тільки активні",
+    "inactiveOnly": "Тільки неактивні",
+    "tip": "Порада: вимкни обидва, щоб не фільтрувати за активністю."
+  },
+  "chips": {
+    "q": "q",
+    "roles": "roles",
+    "active": "active",
+    "minBalance": "minBalance",
+    "maxBalance": "maxBalance",
+    "createdFrom": "createdFrom",
+    "createdTo": "createdTo"
+  },
+  "labels": {
+    "balance": "Баланс",
+    "id": "ID"
+  },
+  "hint": {
+    "openDetails": "Натисни на картку, щоб відкрити деталі користувача"
+  },
+  "empty": "Користувачів не знайдено.",
+  "roleDialog": {
+    "title": "Зміна ролі",
+    "user": "Користувач",
+    "cancel": "Скасувати",
+    "save": "Зберегти"
+  },
+  "confirms": {
+    "delete": "Видалити користувача {{email}}? Дію неможливо скасувати.",
+    "block": "Заблокувати користувача {{email}}?",
+    "unblock": "Розблокувати користувача {{email}}?"
+  },
+  "errors": {
+    "loadFailed": "Не вдалося завантажити користувачів",
+    "updateRoleFailed": "Не вдалося оновити роль",
+    "updateStatusFailed": "Не вдалося оновити статус користувача",
+    "deleteFailed": "Не вдалося видалити користувача"
+  }
+},
+ "adminUserDetails": {
+      "titleFallback": "Користувач",
+      "titleWithName": "Користувач: {{name}}",
+      "titleWithId": "Користувач {{id}}",
+
+      "errors": {
+        "loadUser": "Не вдалося завантажити дані користувача",
+        "loadOrders": "Не вдалося завантажити замовлення користувача",
+        "loadReviews": "Не вдалося завантажити відгуки користувача",
+        "loadPayments": "Не вдалося завантажити платежі користувача"
+      },
+
+      "states": {
+        "notFound": "Користувача не знайдено"
+      },
+
+      "sections": {
+        "user": "Користувач",
+        "orders": "Замовлення",
+        "payments": "Платежі",
+        "reviews": "Відгуки"
+      },
+
+      "loading": {
+        "page": "Завантаження…",
+        "orders": "Завантаження замовлень…",
+        "payments": "Завантаження платежів…",
+        "reviews": "Завантаження відгуків…"
+      },
+
+      "chips": {
+        "count": "К-сть: {{count}}",
+        "role": "Роль: {{role}}",
+        "active": "Активний: {{value}}"
+      },
+
+      "fields": {
+        "userId": "User ID",
+        "email": "Email",
+        "name": "Імʼя",
+        "phone": "Телефон",
+        "balance": "Баланс",
+        "created": "Створено",
+        "updated": "Оновлено"
+      },
+
+      "orders": {
+        "empty": "Немає замовлень у цього користувача",
+        "openOrder": "Відкрити замовлення",
+        "meta": "Статус: {{status}} • Сума: {{total}} • Створено: {{created}}"
+      },
+
+      "payments": {
+        "empty": "Немає платежів у цього користувача",
+        "paymentTitle": "Платіж {{id}}",
+        "meta": "Статус: {{status}} • Метод: {{method}} • Сума: {{amount}} • Оплачено: {{paid}}",
+        "failure": "Помилка: {{reason}}",
+        "openRelatedOrder": "Відкрити повʼязане замовлення"
+      },
+
+      "reviews": {
+        "empty": "Немає відгуків у цього користувача",
+        "reviewTitle": "Відгук {{id}}",
+        "rating": "Оцінка: {{value}}/5",
+        "noText": "(без тексту)",
+        "openRelatedOrder": "Відкрити повʼязане замовлення"
+      }
+    },
+    "adminOrders": {
+      "title": "Замовлення",
+      "subtitle": "Знайдено: {{total}} • Сторінка {{page}} / {{pages}}",
+      "search": {
+        "label": "Пошук по сторінці",
+        "placeholder": "order/user/payment/review…"
+      },
+      "toolbar": {
+        "sort": "Сортування",
+        "perPage": "На сторінці",
+        "filters": "Фільтри",
+        "reset": "Скинути"
+      },
+      "sortOptions": {
+        "CREATED_DESC": "Створено: новіші",
+        "CREATED_ASC": "Створено: старіші",
+        "TOTAL_ASC": "Сума: менша → більша",
+        "TOTAL_DESC": "Сума: більша → менша",
+        "STATUS_ASC": "Статус: А → Я",
+        "STATUS_DESC": "Статус: Я → А",
+        "ORDERNO_ASC": "Номер: А → Я",
+        "ORDERNO_DESC": "Номер: Я → А"
+      },
+      "filters": {
+        "statuses": "Статуси",
+        "minTotal": "Мін. сума",
+        "maxTotal": "Макс. сума",
+        "createdFrom": "Створено від (ISO)",
+        "createdTo": "Створено до (ISO)",
+        "createdFromPh": "2026-02-01T00:00:00",
+        "createdToPh": "2026-02-10T23:59:59",
+        "hasPayment": "Є платіж",
+        "hasReview": "Є відгук",
+        "tip": "Порада: вимкнено = фільтр не застосовується."
+      },
+      "chips": {
+        "statuses": "статуси: {{value}}",
+        "minTotal": "мін: {{value}}",
+        "maxTotal": "макс: {{value}}",
+        "createdFrom": "від: {{value}}",
+        "createdTo": "до: {{value}}",
+        "hasPayment": "платіж: {{value}}",
+        "hasReview": "відгук: {{value}}"
+      },
+      "meta": {
+        "showingOnPage": "Показано на сторінці: {{count}}",
+        "pageOf": "Сторінка {{page}} / {{pages}}"
+      },
+      "states": {
+        "empty": "Замовлень не знайдено.",
+        "loading": "Завантаження…"
+      },
+      "errors": {
+        "load": "Не вдалося завантажити адмінські замовлення",
+        "cancel": "Не вдалося скасувати замовлення",
+        "delete": "Не вдалося видалити замовлення"
+      },
+      "confirm": {
+        "cancel": "Скасувати це замовлення?",
+        "delete": "Видалити це замовлення назавжди?"
+      },
+      "card": {
+        "user": "Користувач: {{value}}",
+        "createdUpdated": "Створено: {{created}} • Оновлено: {{updated}}",
+        "tourId": "Tour ID: {{value}}",
+        "paidAt": "Оплачено: {{value}}",
+        "review": "Відгук: {{value}}",
+        "orderChip": "Замовлення: {{value}}",
+        "totalChip": "Сума: {{value}}",
+        "paymentChipNone": "Платіж: —",
+        "paymentChip": "Платіж: {{status}}{{method}}",
+        "reviewChipNone": "Відгук: —",
+        "reviewChip": "Відгук: {{rating}}/5"
+      },
+      "actions": {
+        "openTour": "Відкрити тур",
+        "cancel": "Скасувати",
+        "delete": "Видалити"
+      }
+    },
+     "adminOrderDetails": {
+      "titleFallback": "Замовлення",
+      "title": "Замовлення {{number}}",
+      "actions": {
+        "back": "Назад",
+        "backToOrders": "Назад до замовлень",
+        "cancel": "Скасувати",
+        "delete": "Видалити",
+        "openUser": "Відкрити користувача",
+        "openTour": "Відкрити тур"
+      },
+      "confirm": {
+        "cancel": "Скасувати це замовлення?",
+        "delete": "Видалити це замовлення назавжди?"
+      },
+      "states": {
+        "notFound": "Замовлення не знайдено",
+        "loading": "Завантаження…"
+      },
+      "errors": {
+        "load": "Не вдалося завантажити деталі замовлення",
+        "cancel": "Не вдалося скасувати замовлення",
+        "delete": "Не вдалося видалити замовлення"
+      },
+      "sections": {
+        "order": "Замовлення",
+        "user": "Користувач",
+        "tour": "Тур",
+        "payment": "Платіж",
+        "review": "Відгук"
+      },
+      "chips": {
+        "status": "Статус: {{value}}",
+        "total": "Сума: {{value}}"
+      },
+      "fields": {
+        "orderId": "Order ID",
+        "orderNumber": "Номер",
+        "created": "Створено",
+        "updated": "Оновлено",
+
+        "userId": "User ID",
+        "email": "Email",
+        "name": "Ім'я",
+        "phone": "Телефон",
+        "balance": "Баланс",
+        "role": "Роль",
+        "active": "Активний",
+
+        "tourId": "Tour ID",
+        "tourHint": "(Деталі туру показані на сторінці туру)",
+
+        "paymentId": "Payment ID",
+        "method": "Метод",
+        "amount": "Сума",
+        "paidAt": "Оплачено",
+        "failureReason": "Причина помилки",
+
+        "reviewId": "Review ID",
+        "rating": "Оцінка",
+        "comment": "Коментар"
+      },
+      "info": {
+        "noPayment": "Для цього замовлення немає платежу",
+        "noReview": "Для цього замовлення немає відгуку"
+      }
+    },
+    "adminPayments": {
+      "title": "Платежі",
+      "meta": {
+        "found": "Знайдено: {{count}}",
+        "pageOf": "Сторінка {{page}} / {{total}}",
+        "loading": "Завантаження…"
+      },
+      "search": {
+        "label": "Пошук на сторінці",
+        "placeholder": "статус/метод/orderId/помилка…"
+      },
+      "toolbar": {
+        "sort": "Сортування",
+        "perPage": "На сторінці",
+        "filters": "Фільтри",
+        "reset": "Скинути"
+      },
+      "sort": {
+        "paidDesc": "Оплата: новіші",
+        "paidAsc": "Оплата: старіші",
+        "amountDesc": "Сума: більша → менша",
+        "amountAsc": "Сума: менша → більша",
+        "statusAsc": "Статус: А → Я",
+        "statusDesc": "Статус: Я → А",
+        "methodAsc": "Метод: А → Я",
+        "methodDesc": "Метод: Я → А"
+      },
+      "filters": {
+        "statuses": "Статуси",
+        "methods": "Методи",
+        "minAmount": "Мін. сума",
+        "maxAmount": "Макс. сума",
+        "paidFrom": "Оплачено від (ISO)",
+        "paidTo": "Оплачено до (ISO)",
+        "paidFromPlaceholder": "2026-02-01T00:00:00",
+        "paidToPlaceholder": "2026-02-10T23:59:59",
+        "hasFailureReason": "Є причина помилки"
+      },
+      "chips": {
+        "statuses": "statuses: {{value}}",
+        "methods": "methods: {{value}}",
+        "min": "min: {{value}}",
+        "max": "max: {{value}}",
+        "paidFrom": "paidFrom: {{value}}",
+        "paidTo": "paidTo: {{value}}",
+        "hasFailureReason": "hasFailureReason: {{value}}"
+      },
+      "list": {
+        "empty": "Платежів не знайдено.",
+        "paymentTitle": "Платіж {{id}}",
+        "orderId": "Order ID: {{id}}",
+        "failureReason": "Причина помилки: {{value}}",
+        "openOrder": "Відкрити замовлення"
+      },
+      "badges": {
+        "status": "Статус: {{value}}",
+        "method": "Метод: {{value}}",
+        "amount": "Сума: {{value}}",
+        "paidAt": "Оплачено: {{value}}"
+      },
+      "errors": {
+        "load": "Не вдалося завантажити платежі"
+      }
+    },
+     "register": {
+      "title": "Реєстрація",
+      "fields": {
+        "name": "Ім’я",
+        "surname": "Прізвище",
+        "email": "Email",
+        "phoneNumber": "Номер телефону",
+        "password": "Пароль"
+      },
+      "placeholders": {
+        "phone": "+380xxxxxxxxx"
+      },
+      "buttons": {
+        "create": "Створити акаунт",
+        "creating": "Створюємо…",
+        "toLogin": "Вже є акаунт? Увійти"
+      },
+      "success": {
+        "registered": "Успішно зареєстровано. Можеш увійти."
+      },
+      "errors": {
+        "registrationFailed": "Реєстрація не вдалася"
+      },
+      "validation": {
+        "nameMin": "Ім’я має містити щонайменше 2 символи",
+        "surnameMin": "Прізвище має містити щонайменше 2 символи",
+        "emailInvalid": "Некоректний email",
+        "phoneInvalid": "Телефон має містити 10–15 цифр і може починатися з +",
+        "passwordMin": "Пароль має містити щонайменше 8 символів",
+        "passwordUpper": "Пароль має містити хоча б 1 велику літеру",
+        "passwordLower": "Пароль має містити хоча б 1 малу літеру",
+        "passwordDigit": "Пароль має містити хоча б 1 цифру"
+      }
+    },
+     "login": {
+      "title": "Вхід",
+      "fields": {
+        "email": "Email",
+        "password": "Пароль"
+      },
+      "buttons": {
+        "signIn": "Увійти",
+        "createAccount": "Створити акаунт"
+      },
+      "errors": {
+        "loginFailed": "Не вдалося увійти"
+      }
+    }
+
+  },
+  "enums": {
+    "tourType": {
+      "REST": "Відпочинок",
+      "EXCURSION": "Екскурсія",
+      "SHOPPING": "Шопінг"
+    },
+    "transferType": {
+      "CAR": "Авто",
+      "PLANE": "Літак",
+      "SHIP": "Корабель"
+    },
+    "hotelType": {
+      "THREE": "3★",
+      "FOUR": "4★",
+      "FIVE": "5★"
+    },
+     "paymentStatus": {
+      "NEW": "Новий",
+      "SUCCESS": "Успішно",
+      "FAILED": "Помилка",
+      "PENDING": "Очікує",
+      "CANCELED": "Скасовано",
+      "REFUNDED": "Повернено"
+    },
+    "paymentMethod": {
+      "CARD": "Картка",
+      "CASH": "Готівка",
+      "TRANSFER": "Переказ"
+    }
+  }
+}
