@@ -10,3 +10,7 @@ export type RegisterRequestDto = {
   phoneNumber: string;
   password: string;
 };
+
+export type RefreshRequestDto = {
+  refreshToken: string;
+};

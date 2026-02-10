@@ -2,9 +2,20 @@
 const ACCESS_KEY = "access_token";
 const REFRESH_KEY = "refresh_token";
 
+const TOKENS_EVENT = "auth:tokens-changed";
+
 function normalizeToken(token: string): string {
   const t = (token ?? "").trim();
   return t.toLowerCase().startsWith("bearer ") ? t.slice(7).trim() : t;
+}
+
+function emitTokensChanged() {
+  window.dispatchEvent(new Event(TOKENS_EVENT));
+}
+
+export function onTokensChanged(handler: () => void) {
+  window.addEventListener(TOKENS_EVENT, handler);
+  return () => window.removeEventListener(TOKENS_EVENT, handler);
 }
 
 export function getAccessToken(): string | null {
@@ -12,8 +23,8 @@ export function getAccessToken(): string | null {
 }
 
 export function setAccessToken(token: string) {
-  // IMPORTANT: store only raw jwt, no "Bearer "
   localStorage.setItem(ACCESS_KEY, normalizeToken(token));
+  emitTokensChanged();
 }
 
 export function getRefreshToken(): string | null {
@@ -21,11 +32,12 @@ export function getRefreshToken(): string | null {
 }
 
 export function setRefreshToken(token: string) {
-  // IMPORTANT: store only raw jwt, no "Bearer "
   localStorage.setItem(REFRESH_KEY, normalizeToken(token));
+  emitTokensChanged();
 }
 
 export function clearTokens() {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  emitTokensChanged();
 }

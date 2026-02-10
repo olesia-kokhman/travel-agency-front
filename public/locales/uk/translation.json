@@ -20,7 +20,9 @@
     "save": "Зберегти",
     "cancel": "Скасувати",
     "edit": "Редагувати",
-    "delete": "Видалити"
+    "delete": "Видалити",
+    "yes": "Так",
+    "no": "Ні"
   },
   "admin": {
     "title": "Адмін панель",
@@ -117,7 +119,9 @@
         "hot": "HOT",
         "active": "Активний",
         "checkIn": "Заїзд",
-        "checkOut": "Виїзд"
+        "checkOut": "Виїзд",
+        "common.yes": "Так",
+        "common.no": "НІ"
       },
       "order": {
         "open": "Оформити замовлення",
@@ -827,10 +831,56 @@
       },
       "buttons": {
         "signIn": "Увійти",
-        "createAccount": "Створити акаунт"
+        "createAccount": "Створити акаунт",
+        "forgotPassword": "Забули пароль?"
       },
       "errors": {
-        "loginFailed": "Не вдалося увійти"
+        "errors": {
+        "invalidCredentials": "Невірний email або пароль.",
+        "tooManyRequests": "Забагато спроб входу. Спробуй ще раз пізніше.",
+        "loginFailed": "Логін не доступний"
+      }
+      }
+    },
+    "forgotPassword": {
+      "title": "Відновлення пароля",
+      "subtitle": "Введи email — ми надішлемо посилання для зміни пароля.",
+      "fields": { "email": "Email" },
+      "buttons": {
+        "sendLink": "Надіслати посилання",
+        "backToLogin": "Назад до входу"
+      },
+      "success": {
+        "checkEmail": "Якщо акаунт існує, ми надіслали листа. Перевір пошту."
+      },
+      "errors": {
+        "tooManyRequests": "Забагато спроб. Спробуй пізніше.",
+        "requestFailed": "Не вдалося надіслати запит на відновлення пароля."
+      }
+    },
+    "resetPassword": {
+      "title": "Зміна пароля",
+      "warnings": {
+        "noToken": "Немає токена. Відкрий посилання з листа ще раз."
+      },
+      "fields": {
+        "newPassword": "Новий пароль",
+        "confirmPassword": "Підтверди пароль"
+      },
+      "buttons": {
+        "reset": "Змінити пароль",
+        "backToLogin": "Назад до входу"
+      },
+      "success": {
+        "passwordChanged": "Пароль змінено успішно."
+      },
+      "errors": {
+        "missingToken": "Токен відсутній.",
+        "passwordRequired": "Введи новий пароль.",
+        "passwordsDoNotMatch": "Паролі не співпадають.",
+        "invalidOrExpiredToken": "Токен невалідний або протермінований.",
+        "tooManyRequests": "Забагато спроб. Спробуй пізніше.",
+        "resetFailed": "Не вдалося змінити пароль."
       }
     }
 

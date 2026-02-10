@@ -13,6 +13,10 @@ import { RequireRole } from "./auth/RequireRole";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
+// ✅ NEW: password reset pages
+import ForgotPasswordPage from "./pages/ForgoPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+
 import AppLayout from "./components/AppLayout";
 import HomePage from "./pages/HomePage";
 import ToursPage from "./pages/ToursPage";
@@ -44,6 +48,10 @@ function AppBootstrap() {
             {/* PUBLIC */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+
+            {/* ✅ PUBLIC: password reset */}
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* PROTECTED */}
             <Route element={<RequireAuth />}>
@@ -101,7 +109,6 @@ function AppBootstrap() {
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  // ✅ When i18n loads translations async (http-backend), Suspense prevents blank UI
   <Suspense
     fallback={
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>

@@ -1,15 +1,27 @@
+// src/pages/LoginPage.tsx
 import React, { useState } from "react";
 import { Alert, Box, Button, Container, Stack, TextField, Typography } from "@mui/material";
 import { useAuth } from "../auth/AuthContext";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+function getLoginErrorMessage(err: any, t: (k: string) => string): string {
+  const status: number | undefined = err?.response?.status;
+
+  if (status === 401) return t("pages.login.errors.invalidCredentials");
+  if (status === 429) return t("pages.login.errors.tooManyRequests");
+
+  const backendMsg = err?.response?.data?.message ?? err?.response?.data?.statusMessage;
+  if (typeof backendMsg === "string" && backendMsg.trim().length > 0) return backendMsg;
+
+  return t("pages.login.errors.loginFailed");
+}
+
 export default function LoginPage() {
   const { t } = useTranslation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [error, setError] = useState<string | null>(null);
 
   const auth = useAuth();
@@ -23,11 +35,7 @@ export default function LoginPage() {
       await auth.login(email, password);
       navigate("/tours");
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ??
-        err?.response?.data?.statusMessage ??
-        t("pages.login.errors.loginFailed");
-      setError(msg);
+      setError(getLoginErrorMessage(err, t));
     }
   };
 
@@ -47,6 +55,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               fullWidth
+              autoComplete="email"
             />
 
             <TextField
@@ -55,10 +64,16 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               fullWidth
+              autoComplete="current-password"
             />
 
             <Button variant="contained" type="submit">
               {t("pages.login.buttons.signIn")}
+            </Button>
+
+            {/* ✅ NEW */}
+            <Button component={RouterLink} to="/forgot-password" variant="text" type="button">
+              {t("pages.login.buttons.forgotPassword")}
             </Button>
 
             <Button component={RouterLink} to="/register" variant="text" type="button">

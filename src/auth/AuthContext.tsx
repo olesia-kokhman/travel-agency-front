@@ -1,7 +1,13 @@
 // src/auth/AuthContext.tsx
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import * as authApi from "../api/auth.api";
-import { clearTokens, getAccessToken, setAccessToken, setRefreshToken } from "./tokenStorage";
+import {
+  clearTokens,
+  setAccessToken,
+  setRefreshToken,
+  getRefreshToken,
+  onTokensChanged,
+} from "./tokenStorage";
 import { getEmailFromToken, getRolesFromToken, getUserIdFromToken, parseJwt, isExpired, getTokenType } from "./jwt";
 
 type AuthState = {
@@ -13,7 +19,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshFromStorage: () => void;
 };
 
@@ -29,17 +35,15 @@ function emptyState(): AuthState {
 }
 
 function buildStateFromAccessToken(): AuthState {
-  const raw = getAccessToken();
+  const raw = localStorage.getItem("access_token");
   if (!raw) return emptyState();
 
   const token = normalizeToken(raw);
-
   const payload = parseJwt(token);
   if (!payload) return emptyState();
 
   const tokenType = getTokenType(token);
   const expired = isExpired(payload);
-
   const isAuthenticated = tokenType === "ACCESS" && !expired;
 
   return {
@@ -55,17 +59,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshFromStorage = () => setState(buildStateFromAccessToken());
 
+  useEffect(() => {
+    // custom event (setAccessToken/setRefreshToken/clearTokens)
+    const off = onTokensChanged(() => setState(buildStateFromAccessToken()));
+
+    // optional: якщо токени змінилися в іншій вкладці
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "access_token" || e.key === "refresh_token") {
+        setState(buildStateFromAccessToken());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      off();
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
   const login = async (email: string, password: string) => {
-    // Clean switch between accounts
     clearTokens();
     setState(emptyState());
 
     const jwt = await authApi.login({ email, password });
 
-    // під твою DTO: jwtAccessToken / jwtRefreshToken
-    if (!jwt?.jwtAccessToken) {
-      throw new Error("Login response: missing jwtAccessToken");
-    }
+    if (!jwt?.jwtAccessToken) throw new Error("Login response: missing jwtAccessToken");
 
     setAccessToken(jwt.jwtAccessToken);
     if (jwt.jwtRefreshToken) setRefreshToken(jwt.jwtRefreshToken);
@@ -73,15 +91,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(buildStateFromAccessToken());
   };
 
-  const logout = () => {
-    clearTokens();
-    setState(buildStateFromAccessToken());
+  const logout = async () => {
+    // best-effort backend logout
+    const rt = getRefreshToken();
+    try {
+      if (rt) await authApi.logout({ refreshToken: rt });
+    } catch {
+      // ігноруємо помилку, локально все одно вичищаємо
+    } finally {
+      clearTokens();
+      setState(buildStateFromAccessToken());
+    }
   };
 
-  const value = useMemo(
-    () => ({ ...state, login, logout, refreshFromStorage }),
-    [state]
-  );
+  const value = useMemo(() => ({ ...state, login, logout, refreshFromStorage }), [state]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

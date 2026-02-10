@@ -20,7 +20,9 @@
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "yes": "yes",
+    "no": "no"
   },
   "admin": {
     "title": "Admin Panel",
@@ -117,7 +119,9 @@
         "hot": "Hot",
         "active": "Active",
         "checkIn": "Check-in",
-        "checkOut": "Check-out"
+        "checkOut": "Check-out",
+         "common.yes": "Yes",
+        "common.no": "No"
       },
       "order": {
         "open": "Place order",
@@ -828,16 +832,60 @@
       },
       "buttons": {
         "signIn": "Sign in",
-        "createAccount": "Create account"
+        "createAccount": "Create account",
+        "forgotPassword": "Forgot password?"
       },
       "errors": {
+        "invalidCredentials": "Invalid email or password",
+        "tooManyRequests": "Too many requests, try again later.",
         "loginFailed": "Login failed"
+      }
+    },
+     "forgotPassword": {
+      "title": "Reset password",
+      "subtitle": "Enter your email and we'll send you a reset link.",
+      "fields": {
+        "email": "Email"
+      },
+      "buttons": {
+        "sendLink": "Send reset link",
+        "backToLogin": "Back to login"
+      },
+      "success": {
+        "checkEmail": "If an account exists, an email was sent. Please check your inbox."
+      },
+      "errors": {
+        "tooManyRequests": "Too many requests. Please try again later.",
+        "requestFailed": "Failed to request password reset."
+      }
+    },
+    "resetPassword": {
+      "title": "Set new password",
+      "warnings": {
+        "noToken": "Missing token. Please open the link from the email again."
+      },
+      "fields": {
+        "newPassword": "New password",
+        "confirmPassword": "Confirm password"
+      },
+      "buttons": {
+        "reset": "Reset password",
+        "backToLogin": "Back to login"
+      },
+      "success": {
+        "passwordChanged": "Password was changed successfully."
+      },
+      "errors": {
+        "missingToken": "Token is missing.",
+        "passwordRequired": "Please enter a new password.",
+        "passwordsDoNotMatch": "Passwords do not match.",
+        "invalidOrExpiredToken": "Token is invalid or expired.",
+        "tooManyRequests": "Too many requests. Please try again later.",
+        "resetFailed": "Failed to reset password."
       }
     }
 
   
-
-
 
   },
   
